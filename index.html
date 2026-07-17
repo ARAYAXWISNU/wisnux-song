@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>wisnux Pemutar Musik Lokal</title>
+  <meta name="description" content="Pemutar musik lokal dengan daftar putar, bisa dipakai sepenuhnya offline." />
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#141210" />
+  <meta name="background-color" content="#141210" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="wisnux.lokal" />
+  <link rel="icon" href="/icons/favicon-64.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap">
+  <style>
+    :root {
+      --bg: #141210;
+      --panel: #1C1815;
+      --panel-2: #211C18;
+      --line: #332C25;
+      --accent: #E8A33D;
+      --accent-2: #C97A3A;
+      --text: #F2EAD9;
+      --muted: #948A78;
+      --danger: #E8734D;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at 15% 0%, #201B16 0%, var(--bg) 45%), var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .display {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .wrap {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 11rem;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+    }
+
+    .disc {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      flex-shrink: 0;
+    }
+
+    .disc svg {
+      color: var(--accent);
+    }
+
+    .disc.spin svg {
+      animation: spin 3s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+
+    .brand h1 span {
+      color: var(--accent);
+    }
+
+    .brand p {
+      font-size: .75rem;
+      color: var(--muted);
+      margin: .15rem 0 0;
+    }
+
+    /* VU meter */
+    .vu {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 38px;
+    }
+
+    .vu i {
+      width: 3px;
+      border-radius: 2px;
+      background: var(--accent);
+      height: 12%;
+      opacity: .25;
+      transition: height .14s ease, opacity .3s ease;
+      display: block;
+    }
+
+    .vu.playing i {
+      animation: vu-pulse ease-in-out infinite alternate;
+    }
+
+    @keyframes vu-pulse {
+      from {
+        transform: scaleY(.4);
+      }
+
+      to {
+        transform: scaleY(1);
+      }
+    }
+
+    /* dropzone */
+    .dropzone {
+      border: 2px dashed var(--line);
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: border-color .15s ease, background .15s ease;
+    }
+
+    .dropzone.drag {
+      border-color: var(--accent);
+      background: rgba(232, 163, 61, 0.06);
+    }
+
+    .dropzone .icon-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      display: grid;
+      place-items: center;
+    }
+
+    .dropzone .icon-circle svg {
+      color: var(--accent);
+    }
+
+    .dropzone strong {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: .95rem;
+      display: block;
+    }
+
+    .dropzone small {
+      color: var(--muted);
+      font-size: .75rem;
+      display: block;
+      margin-top: .25rem;
+    }
+
+    input[type=file] {
+      display: none;
+    }
+
+    /* empty state */
+    .empty {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 3rem 1.5rem;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty svg {
+      color: var(--accent);
+      margin-bottom: .75rem;
+    }
+
+    .empty p {
+      margin: .2rem 0;
+    }
+
+    .empty .t {
+      font-family: 'Space Grotesk', sans-serif;
+      color: var(--text);
+    }
+
+    /* playlist */
+    ul.tracklist {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    ul.tracklist li {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: .7rem 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      cursor: pointer;
+      transition: border-color .15s ease, background .15s ease;
+    }
+
+    ul.tracklist li:hover {
+      border-color: #4a3f32;
+    }
+
+    ul.tracklist li.active {
+      border-color: var(--accent);
+      background: rgba(232, 163, 61, 0.08);
+    }
+
+    .idx {
+      width: 24px;
+      text-align: right;
+      font-size: .75rem;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    ul.tracklist li.active .idx {
+      color: var(--accent);
+    }
+
+    .meta {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .meta .title {
+      font-size: .875rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text);
+    }
+
+    ul.tracklist li.active .meta .title {
+      color: var(--accent);
+    }
+
+    .meta .artist {
+      font-size: .75rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    .remove-btn,
+    .edit-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: .35rem;
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity .15s ease, background .15s ease, color .15s ease;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    ul.tracklist li:hover .remove-btn,
+    ul.tracklist li:hover .edit-btn,
+    ul.tracklist li.editing .remove-btn,
+    ul.tracklist li.editing .edit-btn {
+      opacity: 1;
+    }
+
+    .remove-btn:hover {
+      background: var(--panel-2);
+    }
+
+    .edit-btn:hover {
+      background: var(--panel-2);
+      color: var(--accent);
+    }
+
+    .edit-btn.active-c {
+      color: var(--accent);
+      opacity: 1;
+    }
+
+    .meta .edit-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .meta .edit-fields input {
+      width: 100%;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 8px;
+      padding: .35rem .6rem;
+      font-family: 'Inter', sans-serif;
+      font-size: .8rem;
+      outline: none;
+    }
+
+    .meta .edit-fields input:focus {
+      border-color: var(--accent);
+    }
+
+    .meta .edit-fields input.title-input {
+      font-weight: 500;
+    }
+
+    .meta .edit-fields input.artist-input {
+      font-size: .75rem;
+      color: var(--muted);
+    }
+
+    .save-btn {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      padding: .35rem;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      transition: background .15s ease;
+    }
+
+    .save-btn:hover {
+      background: var(--panel-2);
+    }
+
+    /* bottom player bar */
+    .player-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      border-top: 1px solid var(--line);
+      background: rgba(20, 18, 16, 0.92);
+      backdrop-filter: blur(10px);
+    }
+
+    .player-inner {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: .85rem 1.25rem 1rem;
+    }
+
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: .5rem;
+    }
+
+    .time {
+      font-size: .65rem;
+      color: var(--muted);
+      width: 34px;
+      flex-shrink: 0;
+    }
+
+    .time.right {
+      text-align: left;
+    }
+
+    .time.left {
+      text-align: right;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--line);
+      flex: 1;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+    }
+
+    .track-info {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .mini-disc {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      display: grid;
+      place-items: center;
+    }
+
+    .mini-disc svg {
+      color: var(--accent);
+    }
+
+    .track-info .txt {
+      min-width: 0;
+    }
+
+    .track-info .txt .title {
+      font-size: .875rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .track-info .txt .artist {
+      font-size: .75rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btns {
+      display: flex;
+      align-items: center;
+      gap: .3rem;
+    }
+
+    .btn {
+      background: none;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      padding: .5rem;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      transition: background .15s ease, color .15s ease;
+    }
+
+    .btn:hover {
+      background: var(--panel-2);
+    }
+
+    .btn.muted-c {
+      color: var(--muted);
+    }
+
+    .btn.active-c {
+      color: var(--accent);
+    }
+
+    .btn:disabled {
+      opacity: .3;
+      cursor: not-allowed;
+    }
+
+    .btn:disabled:hover {
+      background: none;
+    }
+
+    .play-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #1A1410;
+    }
+
+    .play-btn:hover {
+      background: var(--accent-2);
+    }
+
+    .volume-row {
+      display: none;
+      align-items: center;
+      gap: .5rem;
+      flex: 1;
+      justify-content: flex-end;
+    }
+
+    .volume-row input[type=range] {
+      width: 90px;
+      flex: none;
+    }
+
+    @media(min-width:640px) {
+      .track-info .txt {
+        display: block;
+      }
+
+      .volume-row {
+        display: flex;
+      }
+    }
+
+    .track-info .txt {
+      display: none;
+    }
+
+    @media(min-width:480px) {
+      .track-info .txt {
+        display: block;
+      }
+    }
+
+    ::selection {
+      background: var(--accent);
+      color: #1A1410;
+    }
+
+    .install-btn {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: .5rem .8rem;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: .75rem;
+      font-weight: 600;
+      transition: border-color .15s ease, color .15s ease;
+      flex-shrink: 0;
+    }
+
+    .install-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .install-btn svg {
+      flex-shrink: 0;
+    }
+
+    @media(max-width:420px) {
+      .install-btn span {
+        display: none;
+      }
+
+      .install-btn {
+        padding: .5rem;
+      }
+    }
+
+    .offline-pill {
+      position: fixed;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-60px);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      padding: .45rem .9rem;
+      border-radius: 999px;
+      font-size: .72rem;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      z-index: 50;
+      transition: transform .25s ease;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .offline-pill.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .offline-pill .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-2);
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="disc" id="headerDisc">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="display">wisnux song<span> local</span></h1>
+          <p>Pemutar musik lokal — semua diputar dari perangkatmu</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:1rem;">
+        <div class="vu" id="headerVu"></div>
+        <button id="installBtn" class="install-btn" style="display:none;" title="Pasang sebagai aplikasi">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span>Instal</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="fileInput" accept="audio/*" multiple />
+      <div class="icon-circle">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+      </div>
+      <div>
+        <strong class="display">Seret file lagu ke sini, atau klik untuk memilih</strong>
+        <small>Mendukung MP3, WAV, OGG, FLAC, M4A — diputar langsung dari perangkatmu, tidak diunggah ke server
+          manapun.</small>
+      </div>
+    </div>
+
+    <div id="emptyState" class="empty">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18V5l12-2v13" />
+        <circle cx="6" cy="18" r="3" />
+        <circle cx="18" cy="16" r="3" />
+      </svg>
+      <p class="t display">Belum ada lagu di daftar putar.</p>
+      <p>Tambahkan berkas untuk mulai memutar.</p>
+    </div>
+
+    <ul class="tracklist" id="tracklist"></ul>
+  </div>
+
+  <div class="player-bar">
+    <div class="player-inner">
+      <div class="progress-row">
+        <span class="time left mono" id="curTime">0:00</span>
+        <input type="range" id="seekBar" min="0" max="0" value="0" step="0.1" />
+        <span class="time right mono" id="durTime">0:00</span>
+      </div>
+      <div class="controls-row">
+        <div class="track-info">
+          <div class="mini-disc" id="barDisc">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </div>
+          <div class="txt">
+            <div class="title" id="nowTitle">Tidak ada lagu diputar</div>
+            <div class="artist" id="nowArtist">Pilih lagu dari daftar</div>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button class="btn muted-c" id="shuffleBtn" title="Acak">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 3 21 8" />
+              <line x1="4" y1="20" x2="21" y2="3" />
+              <polyline points="21 16 21 21 16 21" />
+              <line x1="15" y1="15" x2="21" y2="21" />
+              <line x1="4" y1="4" x2="9" y2="9" />
+            </svg>
+          </button>
+          <button class="btn" id="prevBtn" title="Sebelumnya" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <polygon points="19 20 9 12 19 4 19 20" />
+              <rect x="5" y="4" width="2" height="16" />
+            </svg>
+          </button>
+          <button class="btn play-btn" id="playBtn" title="Putar" disabled>
+            <svg id="playIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"
+              style="margin-left:2px;">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+          </button>
+          <button class="btn" id="nextBtn" title="Berikutnya" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <polygon points="5 4 15 12 5 20 5 4" />
+              <rect x="17" y="4" width="2" height="16" />
+            </svg>
+          </button>
+          <button class="btn muted-c" id="repeatBtn" title="Ulangi">
+            <svg id="repeatIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="17 1 21 5 17 9" />
+              <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+              <polyline points="7 23 3 19 7 15" />
+              <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="volume-row">
+          <button class="btn muted-c" id="muteBtn" title="Bisukan">
+            <svg id="volIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+            </svg>
+          </button>
+          <input type="range" id="volumeBar" min="0" max="1" step="0.01" value="0.8" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="offline-pill" id="offlinePill"><span class="dot"></span> Mode offline — aplikasi tetap berjalan</div>
+
+  <audio id="audio"></audio>
+
+  <script>
+    (function () {
+      // ---------- state ----------
+      let tracks = [];       // {id, file, url, title, artist}
+      let currentIndex = -1;
+      let isPlaying = false;
+      let shuffle = false;
+      let repeatMode = "off"; // off | all | one
+      let editingId = null;
+
+      // ---------- elements ----------
+      const audio = document.getElementById('audio');
+      const dropzone = document.getElementById('dropzone');
+      const fileInput = document.getElementById('fileInput');
+      const tracklistEl = document.getElementById('tracklist');
+      const emptyState = document.getElementById('emptyState');
+
+      const seekBar = document.getElementById('seekBar');
+      const curTimeEl = document.getElementById('curTime');
+      const durTimeEl = document.getElementById('durTime');
+
+      const nowTitle = document.getElementById('nowTitle');
+      const nowArtist = document.getElementById('nowArtist');
+
+      const playBtn = document.getElementById('playBtn');
+      const playIcon = document.getElementById('playIcon');
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const shuffleBtn = document.getElementById('shuffleBtn');
+      const repeatBtn = document.getElementById('repeatBtn');
+      const repeatIcon = document.getElementById('repeatIcon');
+
+      const muteBtn = document.getElementById('muteBtn');
+      const volIcon = document.getElementById('volIcon');
+      const volumeBar = document.getElementById('volumeBar');
+
+      const headerDisc = document.getElementById('headerDisc');
+      const barDisc = document.getElementById('barDisc');
+      const headerVu = document.getElementById('headerVu');
+
+      let muted = false;
+      let lastVolume = 0.8;
+
+      // ---------- build VU meter bars ----------
+      const VU_BARS = 14;
+      for (let i = 0; i < VU_BARS; i++) {
+        const bar = document.createElement('i');
+        const h = 20 + Math.random() * 80;
+        bar.style.setProperty('--h', h + '%');
+        bar.style.height = '12%';
+        bar.style.animationDuration = (0.5 + (i % 5) * 0.09) + 's';
+        bar.style.animationDelay = (i * 0.03) + 's';
+        headerVu.appendChild(bar);
+      }
+
+      function updateVu(playing) {
+        headerVu.classList.toggle('playing', playing);
+        headerVu.querySelectorAll('i').forEach(bar => {
+          bar.style.height = playing ? bar.style.getPropertyValue('--h') : '12%';
+          bar.style.opacity = playing ? 0.7 : 0.25;
+        });
+        headerDisc.classList.toggle('spin', playing);
+        barDisc.classList.toggle('spin', playing);
+      }
+
+      // ---------- helpers ----------
+      function fmtTime(s) {
+        if (!s || isNaN(s) || !isFinite(s)) return "0:00";
+        const m = Math.floor(s / 60);
+        const sec = Math.floor(s % 60);
+        return m + ":" + String(sec).padStart(2, '0');
+      }
+
+      function titleFromFilename(name) {
+        const base = name.replace(/\.[^/.]+$/, "").replace(/_/g, " ").trim();
+        const parts = base.split(" - ");
+        if (parts.length >= 2) {
+          return { artist: parts[0].trim(), title: parts.slice(1).join(" - ").trim() };
+        }
+        return { artist: "Tidak diketahui", title: base };
+      }
+
+      function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      // ---------- file handling ----------
+      function addFiles(fileList) {
+        const files = Array.from(fileList).filter(f =>
+          f.type.startsWith('audio/') || /\.(mp3|wav|ogg|flac|m4a|aac)$/i.test(f.name)
+        );
+        if (files.length === 0) return;
+        const wasEmpty = tracks.length === 0;
+        files.forEach(file => {
+          const meta = titleFromFilename(file.name);
+          tracks.push({
+            id: file.name + '-' + file.size + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+            file,
+            url: URL.createObjectURL(file),
+            title: meta.title,
+            artist: meta.artist
+          });
+        });
+        renderTracklist();
+        if (wasEmpty && tracks.length > 0) {
+          loadTrack(0);
+        }
+        updateControlsDisabled();
+      }
+
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files) addFiles(e.target.files);
+        e.target.value = '';
+      });
+
+      dropzone.addEventListener('click', () => fileInput.click());
+      dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('drag'); });
+      dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('drag');
+        if (e.dataTransfer.files) addFiles(e.dataTransfer.files);
+      });
+
+      function removeTrack(id) {
+        const idx = tracks.findIndex(t => t.id === id);
+        if (idx === -1) return;
+        URL.revokeObjectURL(tracks[idx].url);
+        tracks.splice(idx, 1);
+
+        if (idx === currentIndex) {
+          pause();
+          if (tracks.length === 0) {
+            currentIndex = -1;
+            audio.removeAttribute('src');
+            nowTitle.textContent = "Tidak ada lagu diputar";
+            nowArtist.textContent = "Pilih lagu dari daftar";
+            seekBar.value = 0; seekBar.max = 0;
+            curTimeEl.textContent = "0:00"; durTimeEl.textContent = "0:00";
+          } else {
+            loadTrack(Math.min(idx, tracks.length - 1));
+          }
+        } else if (idx < currentIndex) {
+          currentIndex -= 1;
+        }
+        renderTracklist();
+        updateControlsDisabled();
+      }
+
+      // ---------- render playlist ----------
+      function renderTracklist() {
+        emptyState.style.display = tracks.length === 0 ? 'block' : 'none';
+        tracklistEl.innerHTML = '';
+        tracks.forEach((t, i) => {
+          const li = document.createElement('li');
+          const active = i === currentIndex;
+          const isEditing = editingId === t.id;
+          li.className = (active ? 'active ' : '') + (isEditing ? 'editing' : '');
+
+          if (isEditing) {
+            li.innerHTML = `
+          <span class="idx mono">${active && isPlaying ? '▶' : String(i + 1).padStart(2, '0')}</span>
+          <div class="meta">
+            <div class="edit-fields">
+              <input type="text" class="title-input" value="${escapeHtml(t.title)}" placeholder="Judul lagu" />
+              <input type="text" class="artist-input" value="${escapeHtml(t.artist)}" placeholder="Nama artis" />
+            </div>
+          </div>
+          <button class="save-btn" aria-label="Simpan">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <button class="remove-btn" aria-label="Batal">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        `;
+            const titleInput = li.querySelector('.title-input');
+            const artistInput = li.querySelector('.artist-input');
+
+            const doSave = () => saveEdit(t.id, titleInput.value, artistInput.value);
+            const doCancel = () => { editingId = null; renderTracklist(); };
+
+            li.querySelector('.save-btn').addEventListener('click', (e) => { e.stopPropagation(); doSave(); });
+            li.querySelector('.remove-btn').addEventListener('click', (e) => { e.stopPropagation(); doCancel(); });
+            [titleInput, artistInput].forEach(inp => {
+              inp.addEventListener('click', (e) => e.stopPropagation());
+              inp.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); doSave(); }
+                if (e.key === 'Escape') { e.preventDefault(); doCancel(); }
+              });
+            });
+            tracklistEl.appendChild(li);
+            titleInput.focus();
+            titleInput.select();
+            return;
+          }
+
+          li.innerHTML = `
+        <span class="idx mono">${active && isPlaying ? '▶' : String(i + 1).padStart(2, '0')}</span>
+        <div class="meta">
+          <div class="title">${escapeHtml(t.title)}</div>
+          <div class="artist">${escapeHtml(t.artist)}</div>
+        </div>
+        <button class="edit-btn" aria-label="Ganti nama lagu" title="Ganti nama">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </button>
+        <button class="remove-btn" aria-label="Hapus lagu">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      `;
+          li.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-btn') || e.target.closest('.edit-btn')) return;
+            loadTrack(i);
+            play();
+          });
+          li.querySelector('.remove-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            removeTrack(t.id);
+          });
+          li.querySelector('.edit-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            editingId = t.id;
+            renderTracklist();
+          });
+          tracklistEl.appendChild(li);
+        });
+      }
+
+      function saveEdit(id, newTitle, newArtist) {
+        const t = tracks.find(tr => tr.id === id);
+        if (!t) return;
+        const title = newTitle.trim();
+        const artist = newArtist.trim();
+        t.title = title || t.title;
+        t.artist = artist || "Tidak diketahui";
+        editingId = null;
+        renderTracklist();
+        if (tracks[currentIndex] && tracks[currentIndex].id === id) {
+          nowTitle.textContent = t.title;
+          nowArtist.textContent = t.artist;
+        }
+      }
+
+      // ---------- playback ----------
+      function loadTrack(idx) {
+        if (idx < 0 || idx >= tracks.length) return;
+        currentIndex = idx;
+        const t = tracks[idx];
+        audio.src = t.url;
+        nowTitle.textContent = t.title;
+        nowArtist.textContent = t.artist;
+        renderTracklist();
+        updateControlsDisabled();
+      }
+
+      function play() {
+        if (currentIndex === -1 && tracks.length > 0) {
+          loadTrack(0);
+        }
+        if (currentIndex === -1) return;
+        audio.play().then(() => {
+          isPlaying = true;
+          updatePlayUI();
+        }).catch(() => {
+          isPlaying = false;
+          updatePlayUI();
+        });
+      }
+
+      function pause() {
+        audio.pause();
+        isPlaying = false;
+        updatePlayUI();
+      }
+
+      function togglePlay() {
+        if (isPlaying) pause(); else play();
+      }
+
+      function updatePlayUI() {
+        playIcon.innerHTML = isPlaying
+          ? '<rect x="5" y="4" width="4" height="16" rx="1"></rect><rect x="15" y="4" width="4" height="16" rx="1"></rect>'
+          : '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+        playIcon.style.marginLeft = isPlaying ? '0' : '2px';
+        updateVu(isPlaying);
+        renderTracklist();
+      }
+
+      function updateControlsDisabled() {
+        const has = tracks.length > 0;
+        playBtn.disabled = !has;
+        prevBtn.disabled = !has;
+        nextBtn.disabled = !has;
+      }
+
+      function pickNextIndex() {
+        if (tracks.length === 0) return -1;
+        if (shuffle) {
+          if (tracks.length === 1) return 0;
+          let r;
+          do { r = Math.floor(Math.random() * tracks.length); } while (r === currentIndex);
+          return r;
+        }
+        return (currentIndex + 1) % tracks.length;
+      }
+
+      function playNext() {
+        if (tracks.length === 0) return;
+        const atEnd = !shuffle && currentIndex === tracks.length - 1;
+        if (atEnd && repeatMode === 'off') {
+          loadTrack(0);
+          pause();
+          return;
+        }
+        const idx = pickNextIndex();
+        loadTrack(idx);
+        play();
+      }
+
+      function playPrev() {
+        if (tracks.length === 0) return;
+        if (audio.currentTime > 3) {
+          audio.currentTime = 0;
+          return;
+        }
+        const idx = shuffle
+          ? Math.floor(Math.random() * tracks.length)
+          : (currentIndex - 1 + tracks.length) % tracks.length;
+        loadTrack(idx);
+        play();
+      }
+
+      audio.addEventListener('ended', () => {
+        if (repeatMode === 'one') {
+          audio.currentTime = 0;
+          audio.play();
+          return;
+        }
+        playNext();
+      });
+
+      audio.addEventListener('timeupdate', () => {
+        seekBar.value = audio.currentTime;
+        curTimeEl.textContent = fmtTime(audio.currentTime);
+      });
+
+      audio.addEventListener('loadedmetadata', () => {
+        seekBar.max = audio.duration || 0;
+        durTimeEl.textContent = fmtTime(audio.duration);
+      });
+
+      seekBar.addEventListener('input', () => {
+        audio.currentTime = Number(seekBar.value);
+      });
+
+      // ---------- buttons ----------
+      playBtn.addEventListener('click', togglePlay);
+      nextBtn.addEventListener('click', playNext);
+      prevBtn.addEventListener('click', playPrev);
+
+      shuffleBtn.addEventListener('click', () => {
+        shuffle = !shuffle;
+        shuffleBtn.classList.toggle('active-c', shuffle);
+        shuffleBtn.classList.toggle('muted-c', !shuffle);
+      });
+
+      const repeatIcons = {
+        off: '<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path>',
+        all: '<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path>',
+        one: '<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path><text x="12" y="16" font-size="8" fill="currentColor" stroke="none" text-anchor="middle">1</text>'
+      };
+      repeatBtn.addEventListener('click', () => {
+        repeatMode = repeatMode === 'off' ? 'all' : repeatMode === 'all' ? 'one' : 'off';
+        repeatIcon.innerHTML = repeatIcons[repeatMode];
+        repeatBtn.classList.toggle('active-c', repeatMode !== 'off');
+        repeatBtn.classList.toggle('muted-c', repeatMode === 'off');
+      });
+
+      // ---------- volume ----------
+      volumeBar.addEventListener('input', () => {
+        audio.volume = Number(volumeBar.value);
+        muted = audio.volume === 0;
+        lastVolume = audio.volume || lastVolume;
+        updateVolIcon();
+      });
+
+      muteBtn.addEventListener('click', () => {
+        muted = !muted;
+        audio.volume = muted ? 0 : (lastVolume || 0.8);
+        volumeBar.value = audio.volume;
+        updateVolIcon();
+      });
+
+      function updateVolIcon() {
+        volIcon.innerHTML = (muted || audio.volume === 0)
+          ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>'
+          : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>';
+      }
+
+      audio.volume = 0.8;
+
+      // ---------- keyboard shortcut: space to play/pause ----------
+      document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
+          e.preventDefault();
+          togglePlay();
+        }
+      });
+
+      // ---------- cleanup ----------
+      window.addEventListener('beforeunload', () => {
+        tracks.forEach(t => URL.revokeObjectURL(t.url));
+      });
+
+      updateControlsDisabled();
+
+      // ---------- service worker (offline support) ----------
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => { });
+        });
+      }
+
+      // ---------- offline indicator ----------
+      const offlinePill = document.getElementById('offlinePill');
+      function updateOnlineStatus() {
+        offlinePill.classList.toggle('show', !navigator.onLine);
+      }
+      window.addEventListener('online', updateOnlineStatus);
+      window.addEventListener('offline', updateOnlineStatus);
+      updateOnlineStatus();
+
+      // ---------- install prompt (Android/Chrome) ----------
+      const installBtn = document.getElementById('installBtn');
+      let deferredPrompt = null;
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBtn.style.display = 'flex';
+      });
+
+      installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        installBtn.style.display = 'none';
+      });
+
+      window.addEventListener('appinstalled', () => {
+        installBtn.style.display = 'none';
+      });
+    })();
+  </script>
+
+</body>
+
+</html>
