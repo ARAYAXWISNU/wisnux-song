@@ -574,6 +574,92 @@
       }
     }
 
+    /* Responsive styles for mobile (max-width: 640px) */
+    @media(max-width: 640px) {
+      .wrap {
+        padding-bottom: 12.5rem; /* More space for taller bottom bar */
+      }
+
+      .player-inner {
+        padding: .6rem 1rem .8rem;
+      }
+
+      .controls-row {
+        display: grid;
+        grid-template-areas:
+          "info volume"
+          "btns btns";
+        grid-template-columns: 1fr auto;
+        gap: .5rem;
+        align-items: center;
+      }
+
+      .track-info {
+        grid-area: info;
+        min-width: 0;
+      }
+
+      .track-info .txt {
+        display: block !important; /* Always show title & artist on mobile */
+      }
+
+      .volume-row {
+        grid-area: volume;
+        display: flex !important;
+        justify-content: flex-end;
+      }
+
+      .btns {
+        grid-area: btns;
+        width: 100%;
+        justify-content: center;
+        gap: .5rem;
+      }
+
+      .btn {
+        padding: .7rem; /* Larger touch target size */
+      }
+
+      .play-btn {
+        width: 44px;
+        height: 44px;
+      }
+    }
+
+    /* Hide volume slider on very small screens to avoid clutter, keep mute btn */
+    @media(max-width: 400px) {
+      .volume-row input[type=range] {
+        display: none !important;
+      }
+    }
+
+    /* Make action buttons visible on touch/mobile devices since hover is unavailable */
+    @media (hover: none) {
+      ul.tracklist li .remove-btn,
+      ul.tracklist li .edit-btn {
+        opacity: 0.8;
+      }
+    }
+    @media (max-width: 1024px) {
+      ul.tracklist li .remove-btn,
+      ul.tracklist li .edit-btn {
+        opacity: 0.8;
+      }
+    }
+
+    /* Responsive Header for mobile */
+    @media(max-width: 480px) {
+      header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+      }
+      header > div:last-child {
+        width: 100%;
+        justify-content: space-between !important;
+      }
+    }
+
     ::selection {
       background: var(--accent);
       color: #1A1410;
@@ -680,7 +766,7 @@
     </header>
 
     <div class="dropzone" id="dropzone">
-      <input type="file" id="fileInput" accept="audio/*" multiple />
+      <input type="file" id="fileInput" accept="audio/*,video/*" multiple />
       <div class="icon-circle">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
@@ -690,9 +776,8 @@
         </svg>
       </div>
       <div>
-        <strong class="display">Seret file lagu ke sini, atau klik untuk memilih</strong>
-        <small>Mendukung MP3, WAV, OGG, FLAC, M4A — diputar langsung dari perangkatmu, tidak diunggah ke server
-          manapun.</small>
+        <strong class="display">Seret file lagu atau video ke sini, atau klik untuk memilih</strong>
+        <small>Mendukung MP3, WAV, OGG, FLAC, M4A, MP4, WEBM, MKV, MOV — diputar langsung dari perangkatmu (hanya suara saja).</small>
       </div>
     </div>
 
@@ -937,7 +1022,7 @@
       // ---------- file handling ----------
       function addFiles(fileList) {
         const files = Array.from(fileList).filter(f =>
-          f.type.startsWith('audio/') || /\.(mp3|wav|ogg|flac|m4a|aac)$/i.test(f.name)
+          f.type.startsWith('audio/') || f.type.startsWith('video/') || /\.(mp3|wav|ogg|flac|m4a|aac|mp4|mkv|avi|webm|mov)$/i.test(f.name)
         );
         if (files.length === 0) return;
         const wasEmpty = tracks.length === 0;
