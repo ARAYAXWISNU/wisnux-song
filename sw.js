@@ -43,6 +43,11 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
 
+  // Bypass service worker caching for API routes
+  if (url.pathname.startsWith("/api/")) {
+    return;
+  }
+
   if (url.origin === self.location.origin) {
     event.respondWith(
       caches.match(request).then((cached) => {

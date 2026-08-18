@@ -731,6 +731,110 @@
       background: var(--accent-2);
       flex-shrink: 0;
     }
+
+    /* tiktok input container */
+    .tiktok-container {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .tiktok-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tiktok-title svg {
+      color: var(--accent);
+    }
+
+    .tiktok-input-group {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .tiktok-input {
+      flex: 1;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .tiktok-input:focus {
+      border-color: var(--accent);
+    }
+
+    .tiktok-btn {
+      background: var(--accent);
+      color: #1A1410;
+      border: none;
+      border-radius: 12px;
+      padding: 0.75rem 1.5rem;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.15s ease, transform 0.1s ease;
+      flex-shrink: 0;
+    }
+
+    .tiktok-btn:hover:not(:disabled) {
+      background: #f0b555;
+    }
+
+    .tiktok-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .tiktok-btn:disabled {
+      background: var(--line);
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+
+    .tiktok-status {
+      font-size: 0.75rem;
+      color: var(--muted);
+      min-height: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tiktok-status.error {
+      color: var(--danger);
+    }
+
+    .tiktok-status.success {
+      color: #55b87b;
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(232, 163, 61, 0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
   </style>
 </head>
 
@@ -779,6 +883,25 @@
         <strong class="display">Seret file lagu atau video ke sini, atau klik untuk memilih</strong>
         <small>Mendukung MP3, WAV, OGG, FLAC, M4A, MP4, WEBM, MKV, MOV — diputar langsung dari perangkatmu (hanya suara saja).</small>
       </div>
+    </div>
+
+    <!-- TikTok Loader -->
+    <div class="tiktok-container">
+      <div class="tiktok-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18V5l12-2v13" />
+          <circle cx="6" cy="18" r="3" />
+          <circle cx="18" cy="16" r="3" />
+        </svg>
+        <span>Unduh Musik dari Link TikTok</span>
+      </div>
+      <div class="tiktok-input-group">
+        <input type="url" id="tiktokInput" class="tiktok-input" placeholder="Tempel link TikTok di sini (misal: https://vt.tiktok.com/...)" />
+        <button id="tiktokBtn" class="tiktok-btn">
+          <span>Tambah</span>
+        </button>
+      </div>
+      <div id="tiktokStatus" class="tiktok-status"></div>
     </div>
 
     <div id="emptyState" class="empty">
@@ -1063,6 +1186,142 @@
         e.preventDefault();
         dropzone.classList.remove('drag');
         if (e.dataTransfer.files) addFiles(e.dataTransfer.files);
+      });
+
+      // ---------- TikTok Downloader logic ----------
+      const tiktokInput = document.getElementById('tiktokInput');
+      const tiktokBtn = document.getElementById('tiktokBtn');
+      const tiktokStatus = document.getElementById('tiktokStatus');
+
+      async function fetchTikTokDirectClient(url) {
+        // Fallback langsung dari browser ke TikWM API (dukung CORS)
+        const tikwmRes = await fetch('https://www.tikwm.com/api/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+          },
+          body: new URLSearchParams({ url, hd: '1' })
+        });
+        if (!tikwmRes.ok) {
+          throw new Error(`TikWM HTTP ${tikwmRes.status}`);
+        }
+        const data = await tikwmRes.json();
+        if (data.code === 0 && data.data) {
+          const title = data.data.title || data.data.music_info?.title || 'Lagu TikTok';
+          const artist = data.data.music_info?.author || data.data.author?.nickname || 'Kreator TikTok';
+          const rawAudioUrl = data.data.music || data.data.play || data.data.wmplay;
+          if (rawAudioUrl) {
+            const audioUrl = rawAudioUrl.startsWith('//') ? 'https:' + rawAudioUrl : rawAudioUrl;
+            return { title, artist, audioUrl };
+          }
+        }
+        throw new Error(data.msg || 'Tidak dapat mengekstrak audio dari link TikTok ini.');
+      }
+
+      async function addSongFromTikTok(url) {
+        if (!url) return;
+        
+        const cleanUrl = url.trim();
+        const lowerUrl = cleanUrl.toLowerCase();
+        
+        // Validasi tautan sederhana
+        if (!lowerUrl.includes('tiktok.com')) {
+          showTikTokStatus('Tautan tidak valid. Pastikan itu adalah tautan video/musik TikTok.', 'error');
+          return;
+        }
+
+        tiktokBtn.disabled = true;
+        showTikTokStatus('<div class="spinner"></div> Sedang menganalisis tautan TikTok...', '');
+
+        try {
+          let info = null;
+          let audioBlob = null;
+
+          // 1. Coba lewat backend proxy /api/tiktok terlebih dahulu
+          try {
+            const apiRes = await fetch(`/api/tiktok?action=info&url=${encodeURIComponent(cleanUrl)}`);
+            if (apiRes.ok) {
+              info = await apiRes.json();
+              showTikTokStatus('<div class="spinner"></div> Mengunduh file musik ke perangkat...', '');
+              const downloadRes = await fetch(info.downloadUrl);
+              if (downloadRes.ok) {
+                audioBlob = await downloadRes.blob();
+              }
+            }
+          } catch (backendErr) {
+            console.warn('Backend proxy tidak tersedia, beralih ke koneksi langsung...', backendErr);
+          }
+
+          // 2. Jika backend proxy gagal / tidak tersedia (misal static site), gunakan fallback client-side langsung
+          if (!audioBlob) {
+            showTikTokStatus('<div class="spinner"></div> Mengambil musik secara langsung via API...', '');
+            const clientInfo = await fetchTikTokDirectClient(cleanUrl);
+            info = { title: clientInfo.title, artist: clientInfo.artist };
+            
+            showTikTokStatus('<div class="spinner"></div> Mengunduh file musik...', '');
+            const directAudioRes = await fetch(clientInfo.audioUrl);
+            if (!directAudioRes.ok) {
+              throw new Error('Gagal mengunduh file audio langsung.');
+            }
+            audioBlob = await directAudioRes.blob();
+          }
+
+          // 3. Ubah blob menjadi objek File
+          const safeTitleName = info.title.replace(/[^a-zA-Z0-9\s-_]/g, '').trim() || 'tiktok_audio';
+          const fileName = `${safeTitleName}.mp3`;
+          const audioFile = new File([audioBlob], fileName, { type: 'audio/mpeg' });
+
+          // 4. Tambahkan ke track list & simpan di IndexedDB
+          const wasEmpty = tracks.length === 0;
+          const newTrack = {
+            id: 'tiktok-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+            file: audioFile,
+            url: URL.createObjectURL(audioFile),
+            title: info.title,
+            artist: info.artist
+          };
+
+          tracks.push(newTrack);
+
+          // Simpan ke IndexedDB
+          await saveSong({
+            id: newTrack.id,
+            file: newTrack.file,
+            title: newTrack.title,
+            artist: newTrack.artist
+          });
+
+          renderTracklist();
+          if (wasEmpty && tracks.length > 0) {
+            loadTrack(0);
+          }
+          updateControlsDisabled();
+
+          showTikTokStatus(`✓ Berhasil menambahkan: "${escapeHtml(info.title)}" oleh ${escapeHtml(info.artist)}`, 'success');
+          tiktokInput.value = '';
+        } catch (err) {
+          console.error('TikTok import error:', err);
+          showTikTokStatus('Gagal: ' + (err.message || 'Tidak dapat memproses link TikTok ini.'), 'error');
+        } finally {
+          tiktokBtn.disabled = false;
+        }
+      }
+
+      function showTikTokStatus(msg, type) {
+        tiktokStatus.innerHTML = msg;
+        tiktokStatus.className = 'tiktok-status ' + type;
+      }
+
+      tiktokBtn.addEventListener('click', () => {
+        const url = tiktokInput.value.trim();
+        addSongFromTikTok(url);
+      });
+
+      tiktokInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const url = tiktokInput.value.trim();
+          addSongFromTikTok(url);
+        }
       });
 
       function removeTrack(id) {
