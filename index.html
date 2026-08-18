@@ -996,7 +996,7 @@
 
   <div class="offline-pill" id="offlinePill"><span class="dot"></span> Mode offline — aplikasi tetap berjalan</div>
 
-  <audio id="audio"></audio>
+  <audio id="audio" preload="auto" playsinline></audio>
 
   <script>
     (function () {
@@ -1452,6 +1452,85 @@
         }).catch(err => console.error("Gagal memperbarui info lagu di DB:", err));
       }
 
+      // ---------- Background Audio & MediaSession API ----------
+      let audioCtx = null;
+
+      function ensureAudioContextActive() {
+        try {
+          if (!audioCtx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+              audioCtx = new AudioCtx();
+            }
+          }
+          if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+        } catch (_) {}
+      }
+
+      function updateMediaSessionMetadata(t) {
+        if (!('mediaSession' in navigator)) return;
+        try {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: t.title || 'Lagu Lokal',
+            artist: t.artist || 'Tidak diketahui',
+            album: 'wisnux Pemutar Musik',
+            artwork: [
+              { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+              { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+              { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png' }
+            ]
+          });
+        } catch (e) {
+          console.warn("MediaSession metadata warning:", e);
+        }
+      }
+
+      function updatePositionState() {
+        if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+          if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+            try {
+              navigator.mediaSession.setPositionState({
+                duration: audio.duration,
+                playbackRate: audio.playbackRate || 1.0,
+                position: audio.currentTime
+              });
+            } catch (_) {}
+          }
+        }
+      }
+
+      function initMediaSessionHandlers() {
+        if (!('mediaSession' in navigator)) return;
+        try {
+          navigator.mediaSession.setActionHandler('play', () => play());
+          navigator.mediaSession.setActionHandler('pause', () => pause());
+          navigator.mediaSession.setActionHandler('previoustrack', () => playPrev());
+          navigator.mediaSession.setActionHandler('nexttrack', () => playNext());
+          navigator.mediaSession.setActionHandler('seekto', (details) => {
+            if (details.seekTime !== undefined) {
+              audio.currentTime = details.seekTime;
+              updatePositionState();
+            }
+          });
+          navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+            const skipTime = details.seekOffset || 10;
+            audio.currentTime = Math.max(audio.currentTime - skipTime, 0);
+            updatePositionState();
+          });
+          navigator.mediaSession.setActionHandler('seekforward', (details) => {
+            const skipTime = details.seekOffset || 10;
+            audio.currentTime = Math.min(audio.currentTime + skipTime, audio.duration || 0);
+            updatePositionState();
+          });
+        } catch (e) {
+          console.warn("MediaSession action handler error:", e);
+        }
+      }
+
+      initMediaSessionHandlers();
+
       // ---------- playback ----------
       function loadTrack(idx) {
         if (idx < 0 || idx >= tracks.length) return;
@@ -1460,11 +1539,13 @@
         audio.src = t.url;
         nowTitle.textContent = t.title;
         nowArtist.textContent = t.artist;
+        updateMediaSessionMetadata(t);
         renderTracklist();
         updateControlsDisabled();
       }
 
       function play() {
+        ensureAudioContextActive();
         if (currentIndex === -1 && tracks.length > 0) {
           loadTrack(0);
         }
@@ -1472,7 +1553,8 @@
         audio.play().then(() => {
           isPlaying = true;
           updatePlayUI();
-        }).catch(() => {
+        }).catch((err) => {
+          console.warn("Audio play error:", err);
           isPlaying = false;
           updatePlayUI();
         });
@@ -1495,6 +1577,10 @@
         playIcon.style.marginLeft = isPlaying ? '0' : '2px';
         updateVu(isPlaying);
         renderTracklist();
+
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+        }
       }
 
       function updateControlsDisabled() {
@@ -1553,15 +1639,18 @@
       audio.addEventListener('timeupdate', () => {
         seekBar.value = audio.currentTime;
         curTimeEl.textContent = fmtTime(audio.currentTime);
+        updatePositionState();
       });
 
       audio.addEventListener('loadedmetadata', () => {
         seekBar.max = audio.duration || 0;
         durTimeEl.textContent = fmtTime(audio.duration);
+        updatePositionState();
       });
 
       seekBar.addEventListener('input', () => {
         audio.currentTime = Number(seekBar.value);
+        updatePositionState();
       });
 
       // ---------- buttons ----------

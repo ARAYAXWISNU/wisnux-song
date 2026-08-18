@@ -9,6 +9,7 @@
   "orientation": "portrait-primary",
   "background_color": "#141210",
   "theme_color": "#141210",
+  "categories": ["music", "audio", "entertainment"],
   "lang": "id",
   "icons": [
     {
