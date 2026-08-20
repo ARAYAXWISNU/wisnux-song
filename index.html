@@ -1994,10 +1994,30 @@
 
       initApp();
 
-      // ---------- service worker (offline support) ----------
+      // ---------- service worker (offline support & auto-update for APK) ----------
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => { });
+          navigator.serviceWorker.register('/sw.js').then((reg) => {
+            reg.update();
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
+                    window.location.reload();
+                  }
+                });
+              }
+            });
+          }).catch(() => { });
+
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+              refreshing = true;
+              window.location.reload();
+            }
+          });
         });
       }
 
