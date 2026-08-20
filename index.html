@@ -319,6 +319,52 @@
       opacity: 1;
     }
 
+    .reorder-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      margin-right: -4px;
+      opacity: 0;
+      transition: opacity .15s ease;
+      flex-shrink: 0;
+    }
+
+    ul.tracklist li:hover .reorder-btns {
+      opacity: 1;
+    }
+
+    .move-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 1px 3px;
+      border-radius: 4px;
+      display: grid;
+      place-items: center;
+      transition: color .15s ease, background .15s ease;
+    }
+
+    .move-btn:hover:not(:disabled) {
+      color: var(--accent);
+      background: var(--panel-2);
+    }
+
+    .move-btn:disabled {
+      opacity: 0.15;
+      cursor: not-allowed;
+    }
+
+    ul.tracklist li.dragging {
+      opacity: 0.4;
+      border: 1px dashed var(--accent);
+    }
+
+    ul.tracklist li.drag-over {
+      border-color: var(--accent);
+      background: rgba(232, 163, 61, 0.12);
+    }
+
     .remove-btn:hover {
       background: var(--panel-2);
     }
@@ -636,13 +682,15 @@
     /* Make action buttons visible on touch/mobile devices since hover is unavailable */
     @media (hover: none) {
       ul.tracklist li .remove-btn,
-      ul.tracklist li .edit-btn {
+      ul.tracklist li .edit-btn,
+      ul.tracklist li .reorder-btns {
         opacity: 0.8;
       }
     }
     @media (max-width: 1024px) {
       ul.tracklist li .remove-btn,
-      ul.tracklist li .edit-btn {
+      ul.tracklist li .edit-btn,
+      ul.tracklist li .reorder-btns {
         opacity: 0.8;
       }
     }
@@ -1007,6 +1055,8 @@
       let shuffle = false;
       let repeatMode = "off"; // off | all | one
       let editingId = null;
+      let shufflePool = [];
+      let shuffleHistory = [];
 
       // ---------- IndexedDB Helper ----------
       const DB_NAME = "WisnuxSongDB";
@@ -1164,9 +1214,11 @@
             id: newTrack.id,
             file: newTrack.file,
             title: newTrack.title,
-            artist: newTrack.artist
+            artist: newTrack.artist,
+            order: tracks.length - 1
           }).catch(err => console.error("Gagal menyimpan lagu ke DB:", err));
         });
+        if (shuffle) initShufflePool();
         renderTracklist();
         if (wasEmpty && tracks.length > 0) {
           loadTrack(0);
@@ -1288,9 +1340,11 @@
             id: newTrack.id,
             file: newTrack.file,
             title: newTrack.title,
-            artist: newTrack.artist
+            artist: newTrack.artist,
+            order: tracks.length - 1
           });
 
+          if (shuffle) initShufflePool();
           renderTracklist();
           if (wasEmpty && tracks.length > 0) {
             loadTrack(0);
@@ -1342,14 +1396,135 @@
             nowArtist.textContent = "Pilih lagu dari daftar";
             seekBar.value = 0; seekBar.max = 0;
             curTimeEl.textContent = "0:00"; durTimeEl.textContent = "0:00";
+            updateMediaSessionMetadata(null);
           } else {
             loadTrack(Math.min(idx, tracks.length - 1));
           }
         } else if (idx < currentIndex) {
           currentIndex -= 1;
         }
+
+        if (shuffle) {
+          initShufflePool();
+        }
+        saveAllSongOrders();
         renderTracklist();
         updateControlsDisabled();
+      }
+
+      // ---------- Smart Shuffle Logic ----------
+      function initShufflePool() {
+        shufflePool = [];
+        for (let i = 0; i < tracks.length; i++) {
+          if (i !== currentIndex) {
+            shufflePool.push(i);
+          }
+        }
+        // Fisher-Yates shuffle algorithm
+        for (let i = shufflePool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shufflePool[i], shufflePool[j]] = [shufflePool[j], shufflePool[i]];
+        }
+      }
+
+      function pickNextIndex() {
+        if (tracks.length === 0) return -1;
+        if (tracks.length === 1) return 0;
+
+        if (shuffle) {
+          // Jika antrean acak habis atau indeks tidak cocok lagi, kocok ulang daftar lagu yang tersisa
+          if (shufflePool.length === 0 || shufflePool.some(idx => idx >= tracks.length)) {
+            initShufflePool();
+          }
+          if (shufflePool.length === 0) {
+            return (currentIndex + 1) % tracks.length;
+          }
+          const nextIdx = shufflePool.shift();
+          if (currentIndex !== -1) {
+            shuffleHistory.push(currentIndex);
+          }
+          return nextIdx;
+        }
+
+        return (currentIndex + 1) % tracks.length;
+      }
+
+      // ---------- Reordering Tracks ----------
+      function moveTrack(fromIndex, toIndex) {
+        if (fromIndex < 0 || fromIndex >= tracks.length || toIndex < 0 || toIndex >= tracks.length || fromIndex === toIndex) return;
+
+        const movedTrack = tracks.splice(fromIndex, 1)[0];
+        tracks.splice(toIndex, 0, movedTrack);
+
+        if (currentIndex === fromIndex) {
+          currentIndex = toIndex;
+        } else if (fromIndex < currentIndex && toIndex >= currentIndex) {
+          currentIndex -= 1;
+        } else if (fromIndex > currentIndex && toIndex <= currentIndex) {
+          currentIndex += 1;
+        }
+
+        if (shuffle) {
+          initShufflePool();
+        }
+
+        renderTracklist();
+        saveAllSongOrders();
+      }
+
+      async function saveAllSongOrders() {
+        try {
+          for (let i = 0; i < tracks.length; i++) {
+            const t = tracks[i];
+            await saveSong({
+              id: t.id,
+              file: t.file,
+              title: t.title,
+              artist: t.artist,
+              order: i
+            });
+          }
+        } catch (err) {
+          console.error("Gagal menyimpan urutan lagu ke DB:", err);
+        }
+      }
+
+      let dragSrcIndex = null;
+
+      function handleDragStart(e) {
+        dragSrcIndex = Number(this.getAttribute('data-index'));
+        this.classList.add('dragging');
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', dragSrcIndex);
+        }
+      }
+
+      function handleDragOver(e) {
+        if (e.preventDefault) e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        this.classList.add('drag-over');
+        return false;
+      }
+
+      function handleDragLeave(e) {
+        this.classList.remove('drag-over');
+      }
+
+      function handleDrop(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        const targetIndex = Number(this.getAttribute('data-index'));
+        if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
+          moveTrack(dragSrcIndex, targetIndex);
+        }
+        return false;
+      }
+
+      function handleDragEnd(e) {
+        this.classList.remove('dragging');
+        document.querySelectorAll('ul.tracklist li').forEach(li => li.classList.remove('drag-over'));
       }
 
       // ---------- render playlist ----------
@@ -1400,6 +1575,14 @@
           }
 
           li.innerHTML = `
+        <div class="reorder-btns">
+          <button class="move-btn move-up-btn" title="Pindah ke atas" ${i === 0 ? 'disabled' : ''}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+          </button>
+          <button class="move-btn move-down-btn" title="Pindah ke bawah" ${i === tracks.length - 1 ? 'disabled' : ''}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
         <span class="idx mono">${active && isPlaying ? '▶' : String(i + 1).padStart(2, '0')}</span>
         <div class="meta">
           <div class="title">${escapeHtml(t.title)}</div>
@@ -1412,8 +1595,32 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       `;
+
+          const moveUpBtn = li.querySelector('.move-up-btn');
+          const moveDownBtn = li.querySelector('.move-down-btn');
+          if (moveUpBtn) {
+            moveUpBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              moveTrack(i, i - 1);
+            });
+          }
+          if (moveDownBtn) {
+            moveDownBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              moveTrack(i, i + 1);
+            });
+          }
+
+          li.setAttribute('draggable', 'true');
+          li.setAttribute('data-index', i);
+          li.addEventListener('dragstart', handleDragStart);
+          li.addEventListener('dragover', handleDragOver);
+          li.addEventListener('dragleave', handleDragLeave);
+          li.addEventListener('drop', handleDrop);
+          li.addEventListener('dragend', handleDragEnd);
+
           li.addEventListener('click', (e) => {
-            if (e.target.closest('.remove-btn') || e.target.closest('.edit-btn')) return;
+            if (e.target.closest('.remove-btn') || e.target.closest('.edit-btn') || e.target.closest('.reorder-btns')) return;
             loadTrack(i);
             play();
           });
@@ -1448,7 +1655,8 @@
           id: t.id,
           file: t.file,
           title: t.title,
-          artist: t.artist
+          artist: t.artist,
+          order: tracks.indexOf(t)
         }).catch(err => console.error("Gagal memperbarui info lagu di DB:", err));
       }
 
@@ -1471,15 +1679,21 @@
 
       function updateMediaSessionMetadata(t) {
         if (!('mediaSession' in navigator)) return;
+        if (!t || tracks.length === 0 || currentIndex === -1) {
+          navigator.mediaSession.metadata = null;
+          navigator.mediaSession.playbackState = 'none';
+          return;
+        }
         try {
+          const origin = window.location.origin;
           navigator.mediaSession.metadata = new MediaMetadata({
             title: t.title || 'Lagu Lokal',
             artist: t.artist || 'Tidak diketahui',
             album: 'wisnux Pemutar Musik',
             artwork: [
-              { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-              { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-              { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png' }
+              { src: origin + '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+              { src: origin + '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+              { src: origin + '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png' }
             ]
           });
         } catch (e) {
@@ -1508,6 +1722,7 @@
           navigator.mediaSession.setActionHandler('pause', () => pause());
           navigator.mediaSession.setActionHandler('previoustrack', () => playPrev());
           navigator.mediaSession.setActionHandler('nexttrack', () => playNext());
+          navigator.mediaSession.setActionHandler('stop', () => pause());
           navigator.mediaSession.setActionHandler('seekto', (details) => {
             if (details.seekTime !== undefined) {
               audio.currentTime = details.seekTime;
@@ -1536,7 +1751,9 @@
         if (idx < 0 || idx >= tracks.length) return;
         currentIndex = idx;
         const t = tracks[idx];
+        audio.pause();
         audio.src = t.url;
+        audio.load();
         nowTitle.textContent = t.title;
         nowArtist.textContent = t.artist;
         updateMediaSessionMetadata(t);
@@ -1550,14 +1767,20 @@
           loadTrack(0);
         }
         if (currentIndex === -1) return;
-        audio.play().then(() => {
-          isPlaying = true;
-          updatePlayUI();
-        }).catch((err) => {
-          console.warn("Audio play error:", err);
-          isPlaying = false;
-          updatePlayUI();
-        });
+        if ('mediaSession' in navigator && tracks[currentIndex]) {
+          navigator.mediaSession.playbackState = 'playing';
+        }
+        const p = audio.play();
+        if (p !== undefined) {
+          p.then(() => {
+            isPlaying = true;
+            updatePlayUI();
+          }).catch((err) => {
+            console.warn("Audio play error:", err);
+            isPlaying = false;
+            updatePlayUI();
+          });
+        }
       }
 
       function pause() {
@@ -1579,7 +1802,12 @@
         renderTracklist();
 
         if ('mediaSession' in navigator) {
-          navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+          if (tracks.length === 0 || currentIndex === -1) {
+            navigator.mediaSession.metadata = null;
+            navigator.mediaSession.playbackState = 'none';
+          } else {
+            navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+          }
         }
       }
 
@@ -1588,17 +1816,6 @@
         playBtn.disabled = !has;
         prevBtn.disabled = !has;
         nextBtn.disabled = !has;
-      }
-
-      function pickNextIndex() {
-        if (tracks.length === 0) return -1;
-        if (shuffle) {
-          if (tracks.length === 1) return 0;
-          let r;
-          do { r = Math.floor(Math.random() * tracks.length); } while (r === currentIndex);
-          return r;
-        }
-        return (currentIndex + 1) % tracks.length;
       }
 
       function playNext() {
@@ -1620,9 +1837,15 @@
           audio.currentTime = 0;
           return;
         }
-        const idx = shuffle
-          ? Math.floor(Math.random() * tracks.length)
-          : (currentIndex - 1 + tracks.length) % tracks.length;
+        if (shuffle && shuffleHistory.length > 0) {
+          const prevIdx = shuffleHistory.pop();
+          if (prevIdx >= 0 && prevIdx < tracks.length) {
+            loadTrack(prevIdx);
+            play();
+            return;
+          }
+        }
+        const idx = (currentIndex - 1 + tracks.length) % tracks.length;
         loadTrack(idx);
         play();
       }
@@ -1634,6 +1857,23 @@
           return;
         }
         playNext();
+      });
+
+      audio.addEventListener('error', (e) => {
+        console.error("Audio playback error:", e);
+        if (tracks[currentIndex] && tracks[currentIndex].file) {
+          try {
+            tracks[currentIndex].url = URL.createObjectURL(tracks[currentIndex].file);
+            audio.src = tracks[currentIndex].url;
+            if (isPlaying) {
+              audio.play().catch(() => playNext());
+              return;
+            }
+          } catch (_) {}
+        }
+        if (isPlaying) {
+          playNext();
+        }
       });
 
       audio.addEventListener('timeupdate', () => {
@@ -1662,6 +1902,13 @@
         shuffle = !shuffle;
         shuffleBtn.classList.toggle('active-c', shuffle);
         shuffleBtn.classList.toggle('muted-c', !shuffle);
+        if (shuffle) {
+          initShufflePool();
+          shuffleHistory = currentIndex !== -1 ? [currentIndex] : [];
+        } else {
+          shufflePool = [];
+          shuffleHistory = [];
+        }
       });
 
       const repeatIcons = {
@@ -1717,6 +1964,7 @@
         try {
           const savedSongs = await getAllSongs();
           if (savedSongs && savedSongs.length > 0) {
+            savedSongs.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
             savedSongs.forEach(s => {
               tracks.push({
                 id: s.id,
