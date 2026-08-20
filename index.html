@@ -1752,7 +1752,16 @@
         currentIndex = idx;
         const t = tracks[idx];
         audio.pause();
-        audio.src = t.url;
+
+        // Gunakan rute /media-stream berbasis Service Worker HTTP 206 Partial Content
+        // Ini mencegah browser HP (Android Chrome) menghentikan lagu saat layar dimatikan (Blob URL suspension)
+        const streamUrl = `/media-stream?id=${encodeURIComponent(t.id)}&t=${Date.now()}`;
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+          audio.src = streamUrl;
+        } else {
+          audio.src = t.url || (t.file ? URL.createObjectURL(t.file) : '');
+        }
+
         audio.load();
         nowTitle.textContent = t.title;
         nowArtist.textContent = t.artist;
@@ -1861,15 +1870,15 @@
 
       audio.addEventListener('error', (e) => {
         console.error("Audio playback error:", e);
-        if (tracks[currentIndex] && tracks[currentIndex].file) {
-          try {
-            tracks[currentIndex].url = URL.createObjectURL(tracks[currentIndex].file);
-            audio.src = tracks[currentIndex].url;
+        if (tracks[currentIndex]) {
+          const t = tracks[currentIndex];
+          if (!audio.src.includes('blob:') && t.url) {
+            audio.src = t.url;
             if (isPlaying) {
               audio.play().catch(() => playNext());
               return;
             }
-          } catch (_) {}
+          }
         }
         if (isPlaying) {
           playNext();
