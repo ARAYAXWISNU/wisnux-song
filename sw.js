@@ -1,4 +1,4 @@
-const CACHE_NAME = "wisnux.song.lokal-v3";
+const CACHE_NAME = "wisnux.song.lokal-v4";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -60,7 +60,7 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
 
-  // Stream audio directly from IndexedDB via HTTP 206 Partial Content (Bypasses Android Chrome Blob URL suspension on lockscreen)
+  // Stream audio directly from IndexedDB via HTTP 206 Partial Content (Bypasses Android Chrome Blob URL & Video suspension on lockscreen)
   if (url.origin === self.location.origin && url.pathname === "/media-stream") {
     const songId = url.searchParams.get("id");
     if (!songId) {
@@ -76,7 +76,15 @@ self.addEventListener("fetch", (event) => {
           }
           const blob = song.file;
           const rangeHeader = request.headers.get("Range");
-          const mimeType = blob.type || "audio/mpeg";
+
+          // Pastikan MIME type selalu berawalan audio/* agar Android Chrome tidak menganggapnya sebagai video
+          let mimeType = (blob.type || "").toLowerCase();
+          if (!mimeType.startsWith("audio/")) {
+            if (mimeType.includes("mp4") || mimeType.includes("m4a")) mimeType = "audio/mp4";
+            else if (mimeType.includes("webm")) mimeType = "audio/webm";
+            else if (mimeType.includes("ogg")) mimeType = "audio/ogg";
+            else mimeType = "audio/mpeg";
+          }
 
           if (!rangeHeader) {
             return new Response(blob, {

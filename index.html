@@ -1192,32 +1192,56 @@
         return div.innerHTML;
       }
 
+      function getAudioMimeType(file) {
+        const name = (file.name || "").toLowerCase();
+        const type = (file.type || "").toLowerCase();
+
+        if (type.startsWith("audio/")) return type;
+        if (name.endsWith(".mp3")) return "audio/mpeg";
+        if (name.endsWith(".m4a") || name.endsWith(".aac")) return "audio/mp4";
+        if (name.endsWith(".ogg") || name.endsWith(".opus")) return "audio/ogg";
+        if (name.endsWith(".flac")) return "audio/flac";
+        if (name.endsWith(".wav")) return "audio/wav";
+        if (name.endsWith(".mp4") || name.endsWith(".mkv") || name.endsWith(".mov") || name.endsWith(".avi")) return "audio/mp4";
+        if (name.endsWith(".webm")) return "audio/webm";
+
+        return "audio/mpeg";
+      }
+
       // ---------- file handling ----------
-      function addFiles(fileList) {
+      async function addFiles(fileList) {
         const files = Array.from(fileList).filter(f =>
           f.type.startsWith('audio/') || f.type.startsWith('video/') || /\.(mp3|wav|ogg|flac|m4a|aac|mp4|mkv|avi|webm|mov)$/i.test(f.name)
         );
         if (files.length === 0) return;
         const wasEmpty = tracks.length === 0;
-        files.forEach(file => {
+
+        for (const file of files) {
           const meta = titleFromFilename(file.name);
+          const mimeType = getAudioMimeType(file);
+
+          // Re-wrap file dengan MIME type audio/* agar Android Chrome tidak menganggapnya video saat layar HP mati
+          const audioFile = new File([file], file.name, { type: mimeType });
+
           const newTrack = {
             id: file.name + '-' + file.size + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
-            file,
-            url: URL.createObjectURL(file),
+            file: audioFile,
+            url: URL.createObjectURL(audioFile),
             title: meta.title,
             artist: meta.artist
           };
           tracks.push(newTrack);
-          // Simpan ke IndexedDB
-          saveSong({
+
+          // Simpan ke IndexedDB dan tunggu (await) agar Service Worker langsung bisa menyajikannya via /media-stream
+          await saveSong({
             id: newTrack.id,
             file: newTrack.file,
             title: newTrack.title,
             artist: newTrack.artist,
             order: tracks.length - 1
           }).catch(err => console.error("Gagal menyimpan lagu ke DB:", err));
-        });
+        }
+
         if (shuffle) initShufflePool();
         renderTracklist();
         if (wasEmpty && tracks.length > 0) {
