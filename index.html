@@ -1751,7 +1751,6 @@
         if (idx < 0 || idx >= tracks.length) return;
         currentIndex = idx;
         const t = tracks[idx];
-        audio.pause();
 
         // Gunakan rute /media-stream berbasis Service Worker HTTP 206 Partial Content
         // Ini mencegah browser HP (Android Chrome) menghentikan lagu saat layar dimatikan (Blob URL suspension)
@@ -1766,7 +1765,11 @@
         nowTitle.textContent = t.title;
         nowArtist.textContent = t.artist;
         updateMediaSessionMetadata(t);
-        renderTracklist();
+
+        // Hanya perbarui DOM berat jika aplikasi terlihat (layar menyala) untuk cegah throttling latar belakang di Android
+        if (!document.hidden) {
+          renderTracklist();
+        }
         updateControlsDisabled();
       }
 
@@ -1776,18 +1779,32 @@
           loadTrack(0);
         }
         if (currentIndex === -1) return;
+
+        isPlaying = true;
         if ('mediaSession' in navigator && tracks[currentIndex]) {
           navigator.mediaSession.playbackState = 'playing';
         }
+
+        if (!document.hidden) {
+          updatePlayUI();
+        }
+
         const p = audio.play();
         if (p !== undefined) {
           p.then(() => {
             isPlaying = true;
-            updatePlayUI();
+            if ('mediaSession' in navigator) {
+              navigator.mediaSession.playbackState = 'playing';
+            }
           }).catch((err) => {
             console.warn("Audio play error:", err);
             isPlaying = false;
-            updatePlayUI();
+            if ('mediaSession' in navigator) {
+              navigator.mediaSession.playbackState = 'paused';
+            }
+            if (!document.hidden) {
+              updatePlayUI();
+            }
           });
         }
       }
@@ -1795,7 +1812,12 @@
       function pause() {
         audio.pause();
         isPlaying = false;
-        updatePlayUI();
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = 'paused';
+        }
+        if (!document.hidden) {
+          updatePlayUI();
+        }
       }
 
       function togglePlay() {
@@ -1808,7 +1830,10 @@
           : '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
         playIcon.style.marginLeft = isPlaying ? '0' : '2px';
         updateVu(isPlaying);
-        renderTracklist();
+
+        if (!document.hidden) {
+          renderTracklist();
+        }
 
         if ('mediaSession' in navigator) {
           if (tracks.length === 0 || currentIndex === -1) {
@@ -1819,6 +1844,14 @@
           }
         }
       }
+
+      // Re-render UI secara lancar saat layar HP dinyalakan kembali
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+          renderTracklist();
+          updatePlayUI();
+        }
+      });
 
       function updateControlsDisabled() {
         const has = tracks.length > 0;
