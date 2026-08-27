@@ -257,6 +257,7 @@ export default async function handler(req, res) {
       const contentType =
         audioRes.headers.get('Content-Type') || 'audio/mpeg';
       res.setHeader('Content-Type', contentType);
+      res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Cache-Control', 'public, max-age=3600');
 
       const arrayBuffer = await audioRes.arrayBuffer();
