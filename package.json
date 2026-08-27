@@ -6,11 +6,5 @@
   "scripts": {
     "build": "echo 'Vercel build complete'",
     "dev": "node dev-server.js"
-  },
-  "devDependencies": {
-    "vercel": "^37.3.0"
-  },
-  "dependencies": {
-    "btch-downloader": "^6.3.6"
   }
 }

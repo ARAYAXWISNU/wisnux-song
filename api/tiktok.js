@@ -130,23 +130,25 @@ export default async function handler(req, res) {
         errors.push(`TikWM GET: ${err.message}`);
       }
 
-      // ── Provider 3: btch-downloader ───────────────────────────────────────
+      // ── Provider 3: Optional Fallback ─────────────────────────────────────
       try {
-        const { ttdl } = await import('btch-downloader');
-        const resData = await ttdl(targetUrl);
-        if (resData && resData.status !== false) {
-          const rawAudioUrl =
-            resData.audio?.[0] || resData.audioUrl || resData.video?.[0];
-          if (rawAudioUrl) {
-            const title = resData.title || resData.title_audio || 'Lagu TikTok';
-            const artist = resData.author || 'Kreator TikTok';
-            const downloadUrl = `/api/tiktok?action=download&audioUrl=${encodeURIComponent(rawAudioUrl)}`;
+        const mod = await import('btch-downloader').catch(() => null);
+        if (mod && mod.ttdl) {
+          const resData = await mod.ttdl(targetUrl);
+          if (resData && resData.status !== false) {
+            const rawAudioUrl =
+              resData.audio?.[0] || resData.audioUrl || resData.video?.[0];
+            if (rawAudioUrl) {
+              const title = resData.title || resData.title_audio || 'Lagu TikTok';
+              const artist = resData.author || 'Kreator TikTok';
+              const downloadUrl = `/api/tiktok?action=download&audioUrl=${encodeURIComponent(rawAudioUrl)}`;
 
-            return res.status(200).json({ title, artist, downloadUrl });
+              return res.status(200).json({ title, artist, downloadUrl });
+            }
           }
         }
       } catch (err) {
-        errors.push(`btch-downloader: ${err.message}`);
+        errors.push(`Fallback provider: ${err.message}`);
       }
 
       // ── Provider 4: HTML Scraping + oEmbed ────────────────────────────────
