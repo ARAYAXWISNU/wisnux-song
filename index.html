@@ -1218,10 +1218,9 @@
 
         for (const file of files) {
           const meta = titleFromFilename(file.name);
-          const mimeType = getAudioMimeType(file);
 
-          // Re-wrap file dengan MIME type audio/* agar Android Chrome tidak menganggapnya video saat layar HP mati
-          const audioFile = new File([file], file.name, { type: mimeType });
+          // Re-wrap file dengan MIME type audio/mpeg murni (persis lagu dari link TikTok) agar tidak dianggap video saat layar mati
+          const audioFile = new File([file], file.name, { type: 'audio/mpeg' });
 
           const newTrack = {
             id: file.name + '-' + file.size + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
@@ -2053,28 +2052,26 @@
 
       // ---------- service worker (offline support & auto-update for APK) ----------
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then((reg) => {
-            reg.update();
-            reg.addEventListener('updatefound', () => {
-              const newWorker = reg.installing;
-              if (newWorker) {
-                newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
-                    window.location.reload();
-                  }
-                });
-              }
-            });
-          }).catch(() => { });
-
-          let refreshing = false;
-          navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (!refreshing) {
-              refreshing = true;
-              window.location.reload();
+        navigator.serviceWorker.register('/sw.js').then((reg) => {
+          reg.update();
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
+                  window.location.reload();
+                }
+              });
             }
           });
+        }).catch(() => { });
+
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+          }
         });
       }
 
