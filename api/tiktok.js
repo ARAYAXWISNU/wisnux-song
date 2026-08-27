@@ -81,9 +81,7 @@ export default async function handler(req, res) {
                 ? 'https://www.tikwm.com' + rawAudioUrl
                 : rawAudioUrl;
 
-              const host = req.headers.host;
-              const protocol = req.headers['x-forwarded-proto'] || 'http';
-              const downloadUrl = `${protocol}://${host}/api/tiktok?action=download&audioUrl=${encodeURIComponent(fullAudioUrl)}`;
+              const downloadUrl = `/api/tiktok?action=download&audioUrl=${encodeURIComponent(fullAudioUrl)}`;
 
               return res.status(200).json({ title, artist, downloadUrl });
             }
@@ -122,9 +120,7 @@ export default async function handler(req, res) {
                 ? 'https://www.tikwm.com' + rawAudioUrl
                 : rawAudioUrl;
 
-              const host = req.headers.host;
-              const protocol = req.headers['x-forwarded-proto'] || 'http';
-              const downloadUrl = `${protocol}://${host}/api/tiktok?action=download&audioUrl=${encodeURIComponent(fullAudioUrl)}`;
+              const downloadUrl = `/api/tiktok?action=download&audioUrl=${encodeURIComponent(fullAudioUrl)}`;
 
               return res.status(200).json({ title, artist, downloadUrl });
             }
@@ -144,9 +140,7 @@ export default async function handler(req, res) {
           if (rawAudioUrl) {
             const title = resData.title || resData.title_audio || 'Lagu TikTok';
             const artist = resData.author || 'Kreator TikTok';
-            const host = req.headers.host;
-            const protocol = req.headers['x-forwarded-proto'] || 'http';
-            const downloadUrl = `${protocol}://${host}/api/tiktok?action=download&audioUrl=${encodeURIComponent(rawAudioUrl)}`;
+            const downloadUrl = `/api/tiktok?action=download&audioUrl=${encodeURIComponent(rawAudioUrl)}`;
 
             return res.status(200).json({ title, artist, downloadUrl });
           }
@@ -198,9 +192,7 @@ export default async function handler(req, res) {
               title = itemModule?.music?.title || title;
               artist = itemModule?.music?.authorName || artist;
 
-              const host = req.headers.host;
-              const protocol = req.headers['x-forwarded-proto'] || 'http';
-              const downloadUrl = `${protocol}://${host}/api/tiktok?action=download&audioUrl=${encodeURIComponent(musicUrl)}`;
+              const downloadUrl = `/api/tiktok?action=download&audioUrl=${encodeURIComponent(musicUrl)}`;
 
               return res.status(200).json({ title, artist, downloadUrl });
             }
@@ -215,9 +207,7 @@ export default async function handler(req, res) {
             const rawAudioUrl = playMatch[1]
               .replace(/\\u002F/g, '/')
               .replace(/\\u0026/g, '&');
-            const host = req.headers.host;
-            const protocol = req.headers['x-forwarded-proto'] || 'http';
-            const downloadUrl = `${protocol}://${host}/api/tiktok?action=download&audioUrl=${encodeURIComponent(rawAudioUrl)}`;
+            const downloadUrl = `/api/tiktok?action=download&audioUrl=${encodeURIComponent(rawAudioUrl)}`;
 
             return res.status(200).json({ title, artist, downloadUrl });
           }
