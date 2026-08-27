@@ -1044,7 +1044,7 @@
 
   <div class="offline-pill" id="offlinePill"><span class="dot"></span> Mode offline — aplikasi tetap berjalan</div>
 
-  <audio id="audio" preload="auto" playsinline></audio>
+  <audio id="audio" preload="auto" playsinline webkit-playsinline x5-playsinline></audio>
 
   <script>
     (function () {
@@ -1779,7 +1779,7 @@
         // Gunakan rute /media-stream berbasis Service Worker HTTP 206 Partial Content
         // Ini mencegah browser HP (Android Chrome) menghentikan lagu saat layar dimatikan (Blob URL suspension)
         const streamUrl = `/media-stream?id=${encodeURIComponent(t.id)}&t=${Date.now()}`;
-        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        if ('serviceWorker' in navigator) {
           audio.src = streamUrl;
         } else {
           audio.src = t.url || (t.file ? URL.createObjectURL(t.file) : '');

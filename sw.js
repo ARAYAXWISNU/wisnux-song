@@ -1,4 +1,4 @@
-const CACHE_NAME = "wisnux.song.lokal-v4";
+const CACHE_NAME = "wisnux.song.lokal-v5";
 const APP_SHELL = [
   "/",
   "/index.html",
