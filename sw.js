@@ -1,4 +1,4 @@
-const CACHE_NAME = "wisnux.song.lokal-v4";
+const CACHE_NAME = "wisnux.song.lokal-v6";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -77,14 +77,8 @@ self.addEventListener("fetch", (event) => {
           const blob = song.file;
           const rangeHeader = request.headers.get("Range");
 
-          // Pastikan MIME type selalu berawalan audio/* agar Android Chrome tidak menganggapnya sebagai video
-          let mimeType = (blob.type || "").toLowerCase();
-          if (!mimeType.startsWith("audio/")) {
-            if (mimeType.includes("mp4") || mimeType.includes("m4a")) mimeType = "audio/mp4";
-            else if (mimeType.includes("webm")) mimeType = "audio/webm";
-            else if (mimeType.includes("ogg")) mimeType = "audio/ogg";
-            else mimeType = "audio/mpeg";
-          }
+          // Paksa MIME type selalu audio/mpeg murni (persis seperti lagu link TikTok) agar Android Chrome TIDAK menganggapnya video saat layar mati
+          const mimeType = "audio/mpeg";
 
           if (!rangeHeader) {
             return new Response(blob, {
