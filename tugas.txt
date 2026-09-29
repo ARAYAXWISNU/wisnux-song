@@ -1,0 +1,17 @@
+utama 
+1. [SELESAI] buat bisa pakai link juga bisa dari youtube,x,ig,tiktok dan lainnya
+   -> Ditambahkan api/download.js & form unduh multi-platform (YouTube, TikTok, Instagram, X/Twitter, Spotify, SoundCloud, dll) tersimpan offline di IndexedDB.
+2. [SELESAI] buat fitur melihat suara ini keluar di mana kalo keluar di erphone jika terputu maka otomatis ke pause lalu terhubung lagi maka akan ke play secara otomatis dan kalau di earpone juga sama kalau ada ganguan makan akan pause kalau sudah normal ke play lagi 
+   -> Ditambahkan Audio Output Device Monitor (badge & modal), listener devicechange untuk auto-pause saat earphone dicabut & auto-resume saat dicolok lagi, serta penanganan gangguan audio/stutter (waiting/stalled/canplay).
+3.
+4.
+sampingan (opsional)
+1. [SELESAI] pastikan semua fitur bisa semua 
+   -> File drag-drop/picker, IndexedDB offline, background audio, smart shuffle, edit judul/artis, reorder urutan lagu, dan repeat.
+2. [SELESAI] buat desain nya jadi seperti claude ai
+   -> Desain Claude AI aesthetic (warna terracotta #D97757, latar warm charcoal #171513, font Newsreader Serif & Plus Jakarta Sans, pill badge, dan toast notifikasi Claude).
+3. [SELESAI] buat fitur dynamic island biar bisa kontrol dari halaman kunci atau halaman beranda utama 
+   -> Dynamic Island floating di bagian atas aplikasi (bisa diklik/expand), Picture-in-Picture (PiP) melayang di Halaman Beranda HP/layar desktop, dan integrasi MediaSession untuk Layar Kunci (Lock Screen).
+4. [SELESAI] buat fitur menyesuaikan lagu jadi volume lagu menyesuaikan dengan volume hp jadi jika volume hp sedang lagu nya harus sedang juga 
+   -> Ditambahkan Web Audio DynamicsCompressor & Gain Normalizer ("Mode Adaptif HP") agar kenyaringan semua lagu konsisten seimbang dengan tombol volume HP.
+5.

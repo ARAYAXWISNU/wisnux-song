@@ -4,136 +4,514 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>wisnux Pemutar Musik Lokal</title>
-  <meta name="description" content="Pemutar musik lokal dengan daftar putar, bisa dipakai sepenuhnya offline." />
+  <title>wisnux song — Pemutar Musik Pintar</title>
+  <meta name="description" content="Pemutar musik lokal dan multi-sumber (YouTube, TikTok, IG, X) dengan proteksi audio pintar, normalisasi volume HP, dan Dynamic Island." />
 
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#141210" />
-  <meta name="background-color" content="#141210" />
+  <meta name="theme-color" content="#171513" />
+  <meta name="background-color" content="#171513" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="wisnux.lokal" />
+  <meta name="apple-mobile-web-app-title" content="wisnux.song" />
   <link rel="icon" href="/icons/favicon-64.png" type="image/png" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
 
+  <!-- Google Fonts: Claude AI Aesthetic (Newsreader Serif + Plus Jakarta Sans + JetBrains Mono) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap">
+    href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+
   <style>
+    /* ==========================================================================
+       1. CLAUDE AI DESIGN SYSTEM & VARIABLES
+       ========================================================================== */
     :root {
-      --bg: #141210;
-      --panel: #1C1815;
-      --panel-2: #211C18;
-      --line: #332C25;
-      --accent: #E8A33D;
-      --accent-2: #C97A3A;
-      --text: #F2EAD9;
-      --muted: #948A78;
-      --danger: #E8734D;
+      --bg: #171513;
+      --bg-surface: #1E1B18;
+      --panel: #23201C;
+      --panel-2: #2B2621;
+      --panel-elevated: #322D27;
+      --line: #3A332B;
+      --line-subtle: rgba(225, 215, 200, 0.08);
+      
+      /* Claude's signature terracotta / warm clay accent */
+      --accent: #D97757;
+      --accent-hover: #E28769;
+      --accent-active: #C46445;
+      --accent-subtle: rgba(217, 119, 87, 0.14);
+      --accent-glow: rgba(217, 119, 87, 0.28);
+      
+      --text: #F5EFE6;
+      --text-secondary: #B0A79B;
+      --muted: #7E756B;
+      --danger: #E06C53;
+      --success: #5EB884;
+      --warning: #E8A33D;
+      
+      --font-serif: 'Newsreader', Georgia, serif;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      --radius-full: 9999px;
+      
+      --shadow-claude: 0 4px 20px -2px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(225, 215, 200, 0.06);
+      --shadow-card: 0 6px 24px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--line);
+      --shadow-floating: 0 12px 40px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(217, 119, 87, 0.3);
     }
 
     * {
       box-sizing: border-box;
-    }
-
-    html,
-    body {
       margin: 0;
       padding: 0;
     }
 
-    body {
-      background: radial-gradient(circle at 15% 0%, #201B16 0%, var(--bg) 45%), var(--bg);
-      color: var(--text);
-      font-family: 'Inter', sans-serif;
+    html, body {
       min-height: 100vh;
+      background: radial-gradient(circle at 50% 0%, #29241E 0%, #171513 65%), #171513;
+      color: var(--text);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     .mono {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--font-mono);
     }
 
-    .display {
-      font-family: 'Space Grotesk', sans-serif;
+    .serif {
+      font-family: var(--font-serif);
     }
 
-    .wrap {
-      max-width: 880px;
-      margin: 0 auto;
-      padding: 2rem 1.25rem 11rem;
+    ::selection {
+      background: var(--accent);
+      color: #171513;
     }
 
-    header {
+    /* ==========================================================================
+       2. DYNAMIC ISLAND (Pill & Interactive Capsule)
+       ========================================================================== */
+    .dynamic-island-wrapper {
+      position: fixed;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      width: auto;
+      max-width: 92vw;
+      pointer-events: none;
+    }
+
+    .dynamic-island {
+      pointer-events: auto;
+      background: #110F0D;
+      border: 1px solid rgba(217, 119, 87, 0.28);
+      border-radius: var(--radius-full);
+      color: var(--text);
+      box-shadow: var(--shadow-floating);
+      transition: all 0.38s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    /* Collapsed state */
+    .island-collapsed {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 6px 14px 6px 8px;
+      min-height: 38px;
+    }
+
+    .island-art {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--panel-2);
+      border: 1px solid rgba(217, 119, 87, 0.4);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      color: var(--accent);
+    }
+
+    .island-art.spinning svg {
+      animation: spin 3.5s linear infinite;
+    }
+
+    .island-collapsed-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      max-width: 210px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .island-title {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .island-route-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 0.68rem;
+      padding: 1px 7px;
+      border-radius: var(--radius-full);
+      background: rgba(217, 119, 87, 0.15);
+      border: 1px solid rgba(217, 119, 87, 0.3);
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .island-visualizer {
+      display: flex;
+      align-items: flex-end;
+      gap: 2.5px;
+      height: 14px;
+      margin-left: 2px;
+    }
+
+    .island-visualizer i {
+      width: 2.5px;
+      border-radius: 2px;
+      background: var(--accent);
+      height: 30%;
+      opacity: 0.4;
+      transition: height 0.15s ease;
+    }
+
+    .island-visualizer.active i {
+      animation: island-bar 0.7s ease-in-out infinite alternate;
+    }
+
+    .island-visualizer.active i:nth-child(1) { animation-delay: 0.1s; }
+    .island-visualizer.active i:nth-child(2) { animation-delay: 0.35s; }
+    .island-visualizer.active i:nth-child(3) { animation-delay: 0.2s; }
+    .island-visualizer.active i:nth-child(4) { animation-delay: 0.45s; }
+
+    @keyframes island-bar {
+      0% { height: 25%; }
+      100% { height: 100%; }
+    }
+
+    .island-mini-play {
+      background: none;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      padding: 3px;
+      border-radius: 50%;
+      transition: color 0.15s;
+    }
+
+    .island-mini-play:hover {
+      color: var(--accent);
+    }
+
+    /* Expanded state */
+    .island-expanded {
+      display: none;
+      padding: 1.1rem 1.25rem;
+      width: 360px;
+      max-width: 90vw;
+      flex-direction: column;
+      gap: 0.85rem;
+      cursor: default;
+    }
+
+    .dynamic-island.expanded {
+      border-radius: var(--radius-xl);
+      background: #151311;
+      border-color: rgba(217, 119, 87, 0.4);
+    }
+
+    .dynamic-island.expanded .island-collapsed {
+      display: none;
+    }
+
+    .dynamic-island.expanded .island-expanded {
+      display: flex;
+    }
+
+    .expanded-top {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      position: relative;
+    }
+
+    .expanded-cover {
+      width: 46px;
+      height: 46px;
+      border-radius: var(--radius-md);
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      color: var(--accent);
+    }
+
+    .expanded-meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .expanded-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .expanded-artist {
+      font-size: 0.74rem;
+      color: var(--text-secondary);
+      margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .expanded-route-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.7rem;
+      color: var(--accent);
+      background: rgba(217, 119, 87, 0.12);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      margin-top: 4px;
+      border: 1px solid rgba(217, 119, 87, 0.25);
+      cursor: pointer;
+    }
+
+    .expanded-route-badge:hover {
+      background: rgba(217, 119, 87, 0.2);
+    }
+
+    .island-collapse-btn {
+      position: absolute;
+      right: -4px;
+      top: -4px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 4px;
+      border-radius: 50%;
+    }
+
+    .island-collapse-btn:hover {
+      color: var(--text);
+    }
+
+    .expanded-progress {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .expanded-progress .time-tag {
+      font-size: 0.65rem;
+      color: var(--muted);
+      width: 32px;
+    }
+
+    .expanded-progress input[type=range] {
+      flex: 1;
+    }
+
+    .expanded-actions {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 2rem;
+      gap: 0.5rem;
+      padding-top: 0.2rem;
     }
 
-    .brand {
+    .expanded-ctrl-btn {
+      background: none;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      padding: 0.45rem;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .expanded-ctrl-btn:hover {
+      background: var(--panel-2);
+      color: var(--accent);
+    }
+
+    .expanded-play-main {
+      width: 38px;
+      height: 38px;
+      background: var(--accent);
+      color: #171513;
+      border-radius: 50%;
+    }
+
+    .expanded-play-main:hover {
+      background: var(--accent-hover);
+      color: #171513;
+    }
+
+    .pip-chip-btn {
       display: flex;
       align-items: center;
-      gap: .75rem;
+      gap: 4px;
+      font-size: 0.7rem;
+      padding: 4px 9px;
+      border-radius: var(--radius-full);
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
     }
 
-    .disc {
-      width: 44px;
-      height: 44px;
+    .pip-chip-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ==========================================================================
+       3. MAIN LAYOUT & CLAUDE AI STYLING
+       ========================================================================== */
+    .wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 4.8rem 1.25rem 12.5rem;
+    }
+
+    /* Header */
+    header.claude-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2.2rem;
+      gap: 1rem;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+    }
+
+    .claude-disc {
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       display: grid;
       place-items: center;
       border: 1px solid var(--line);
       background: var(--panel);
       flex-shrink: 0;
-    }
-
-    .disc svg {
       color: var(--accent);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+      position: relative;
     }
 
-    .disc.spin svg {
-      animation: spin 3s linear infinite;
+    .claude-disc::after {
+      content: "";
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #171513;
+      border: 1px solid var(--line);
+    }
+
+    .claude-disc.spin svg {
+      animation: spin 4s linear infinite;
     }
 
     @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
+      to { transform: rotate(360deg); }
     }
 
-    .brand h1 {
-      font-size: 1.15rem;
+    .brand-heading-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .brand-heading-row h1 {
+      font-size: 1.35rem;
       font-weight: 600;
-      margin: 0;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.01em;
+      color: var(--text);
     }
 
-    .brand h1 span {
+    .claude-pill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      background: var(--accent-subtle);
+      border: 1px solid rgba(217, 119, 87, 0.35);
       color: var(--accent);
     }
 
-    .brand p {
-      font-size: .75rem;
-      color: var(--muted);
-      margin: .15rem 0 0;
+    .brand-tagline {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      margin-top: 0.2rem;
     }
 
-    /* VU meter */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Claude VU Meter */
     .vu {
       display: flex;
       align-items: flex-end;
-      gap: 3px;
-      height: 38px;
+      gap: 2.5px;
+      height: 32px;
+      padding: 4px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
     }
 
     .vu i {
       width: 3px;
       border-radius: 2px;
       background: var(--accent);
-      height: 12%;
-      opacity: .25;
-      transition: height .14s ease, opacity .3s ease;
+      height: 15%;
+      opacity: 0.25;
+      transition: height 0.14s ease, opacity 0.3s ease;
       display: block;
     }
 
@@ -142,96 +520,341 @@
     }
 
     @keyframes vu-pulse {
-      from {
-        transform: scaleY(.4);
-      }
-
-      to {
-        transform: scaleY(1);
-      }
+      from { transform: scaleY(0.3); }
+      to { transform: scaleY(1); }
     }
 
-    /* dropzone */
+    /* Install & PiP Header buttons */
+    .header-pill-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 0.48rem 0.85rem;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      font-size: 0.76rem;
+      font-weight: 500;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .header-pill-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--panel-2);
+    }
+
+    /* Claude Cards */
+    .claude-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 1.35rem 1.4rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-claude);
+      transition: border-color 0.2s;
+    }
+
+    .claude-card:hover {
+      border-color: #484037;
+    }
+
+    /* ==========================================================================
+       4. MULTI-PLATFORM LINK DOWNLOADER CARD (YouTube, TikTok, IG, X, Spotify, etc.)
+       ========================================================================== */
+    .downloader-card {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .downloader-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0.7;
+    }
+
+    .downloader-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+    }
+
+    .downloader-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .downloader-icon-box {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      background: var(--accent-subtle);
+      border: 1px solid rgba(217, 119, 87, 0.3);
+      display: grid;
+      place-items: center;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .downloader-title-group h2 {
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .downloader-title-group p {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 1px;
+    }
+
+    .platform-pills {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .platform-pill {
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: var(--radius-full);
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .platform-pill.active {
+      color: var(--accent);
+      border-color: rgba(217, 119, 87, 0.4);
+      background: var(--accent-subtle);
+    }
+
+    .link-input-row {
+      display: flex;
+      gap: 0.65rem;
+    }
+
+    .link-input-wrapper {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .link-input-icon {
+      position: absolute;
+      left: 14px;
+      color: var(--muted);
+      pointer-events: none;
+      display: grid;
+      place-items: center;
+    }
+
+    .claude-input {
+      width: 100%;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem 0.75rem 2.6rem;
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+
+    .claude-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-subtle);
+    }
+
+    .claude-btn-primary {
+      background: var(--accent);
+      color: #171513;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.4rem;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.15s, transform 0.1s;
+      flex-shrink: 0;
+    }
+
+    .claude-btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    .claude-btn-primary:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .claude-btn-primary:disabled {
+      background: var(--line);
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+
+    .download-status-bar {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-height: 1.2rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      background: var(--panel-2);
+      border: 1px solid var(--line-subtle);
+    }
+
+    .download-status-bar.error {
+      color: var(--danger);
+      background: rgba(224, 108, 83, 0.1);
+      border-color: rgba(224, 108, 83, 0.25);
+    }
+
+    .download-status-bar.success {
+      color: var(--success);
+      background: rgba(94, 184, 132, 0.1);
+      border-color: rgba(94, 184, 132, 0.25);
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(217, 119, 87, 0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    /* ==========================================================================
+       5. DROPZONE (File Lokal)
+       ========================================================================== */
     .dropzone {
       border: 2px dashed var(--line);
       background: var(--panel);
-      border-radius: 16px;
-      padding: 1.5rem;
+      border-radius: var(--radius-lg);
+      padding: 1.35rem 1.4rem;
       margin-bottom: 1.5rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 1rem;
-      transition: border-color .15s ease, background .15s ease;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .dropzone:hover {
+      border-color: #554b40;
     }
 
     .dropzone.drag {
       border-color: var(--accent);
-      background: rgba(232, 163, 61, 0.06);
+      background: var(--accent-subtle);
     }
 
     .dropzone .icon-circle {
-      width: 48px;
-      height: 48px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       flex-shrink: 0;
       background: var(--panel-2);
       border: 1px solid var(--line);
       display: grid;
       place-items: center;
-    }
-
-    .dropzone .icon-circle svg {
       color: var(--accent);
     }
 
     .dropzone strong {
-      font-family: 'Space Grotesk', sans-serif;
       font-weight: 600;
-      font-size: .95rem;
+      font-size: 0.92rem;
       display: block;
+      color: var(--text);
     }
 
     .dropzone small {
-      color: var(--muted);
-      font-size: .75rem;
+      color: var(--text-secondary);
+      font-size: 0.74rem;
       display: block;
-      margin-top: .25rem;
+      margin-top: 0.2rem;
     }
 
     input[type=file] {
       display: none;
     }
 
-    /* empty state */
+    /* ==========================================================================
+       6. TRACKLIST & PLAYLIST CONTROLS
+       ========================================================================== */
+    .playlist-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      padding: 0 0.2rem;
+    }
+
+    .playlist-heading {
+      font-size: 0.84rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    .playlist-stats {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
     .empty {
       border: 1px solid var(--line);
       background: var(--panel);
-      border-radius: 16px;
+      border-radius: var(--radius-lg);
       padding: 3rem 1.5rem;
       text-align: center;
-      color: var(--muted);
+      color: var(--text-secondary);
     }
 
     .empty svg {
       color: var(--accent);
-      margin-bottom: .75rem;
+      margin-bottom: 0.75rem;
     }
 
     .empty p {
-      margin: .2rem 0;
+      margin: 0.2rem 0;
+      font-size: 0.85rem;
     }
 
     .empty .t {
-      font-family: 'Space Grotesk', sans-serif;
       color: var(--text);
+      font-weight: 600;
+      font-size: 0.95rem;
     }
 
-    /* playlist */
     ul.tracklist {
       list-style: none;
-      margin: 0;
-      padding: 0;
       display: flex;
       flex-direction: column;
       gap: 6px;
@@ -240,34 +863,36 @@
     ul.tracklist li {
       display: flex;
       align-items: center;
-      gap: 1rem;
-      padding: .7rem 1rem;
-      border-radius: 12px;
+      gap: 0.85rem;
+      padding: 0.65rem 0.95rem;
+      border-radius: var(--radius-md);
       border: 1px solid var(--line);
       background: var(--panel);
       cursor: pointer;
-      transition: border-color .15s ease, background .15s ease;
+      transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s;
     }
 
     ul.tracklist li:hover {
-      border-color: #4a3f32;
+      border-color: #554b40;
+      background: var(--panel-2);
     }
 
     ul.tracklist li.active {
       border-color: var(--accent);
-      background: rgba(232, 163, 61, 0.08);
+      background: var(--accent-subtle);
     }
 
     .idx {
       width: 24px;
       text-align: right;
-      font-size: .75rem;
+      font-size: 0.74rem;
       color: var(--muted);
       flex-shrink: 0;
     }
 
     ul.tracklist li.active .idx {
       color: var(--accent);
+      font-weight: 600;
     }
 
     .meta {
@@ -276,7 +901,7 @@
     }
 
     .meta .title {
-      font-size: .875rem;
+      font-size: 0.85rem;
       font-weight: 500;
       white-space: nowrap;
       overflow: hidden;
@@ -286,15 +911,16 @@
 
     ul.tracklist li.active .meta .title {
       color: var(--accent);
+      font-weight: 600;
     }
 
     .meta .artist {
-      font-size: .75rem;
-      color: var(--muted);
+      font-size: 0.73rem;
+      color: var(--text-secondary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      margin-top: 2px;
+      margin-top: 1px;
     }
 
     .remove-btn,
@@ -303,10 +929,10 @@
       border: none;
       color: var(--muted);
       cursor: pointer;
-      padding: .35rem;
+      padding: 0.35rem;
       border-radius: 50%;
       opacity: 0;
-      transition: opacity .15s ease, background .15s ease, color .15s ease;
+      transition: opacity 0.15s, background 0.15s, color 0.15s;
       display: grid;
       place-items: center;
       flex-shrink: 0;
@@ -323,9 +949,8 @@
       display: flex;
       flex-direction: column;
       gap: 1px;
-      margin-right: -4px;
       opacity: 0;
-      transition: opacity .15s ease;
+      transition: opacity 0.15s;
       flex-shrink: 0;
     }
 
@@ -342,12 +967,12 @@
       border-radius: 4px;
       display: grid;
       place-items: center;
-      transition: color .15s ease, background .15s ease;
+      transition: color 0.15s, background 0.15s;
     }
 
     .move-btn:hover:not(:disabled) {
       color: var(--accent);
-      background: var(--panel-2);
+      background: var(--panel-elevated);
     }
 
     .move-btn:disabled {
@@ -362,21 +987,17 @@
 
     ul.tracklist li.drag-over {
       border-color: var(--accent);
-      background: rgba(232, 163, 61, 0.12);
+      background: var(--accent-subtle);
     }
 
     .remove-btn:hover {
-      background: var(--panel-2);
+      background: var(--panel-elevated);
+      color: var(--danger);
     }
 
     .edit-btn:hover {
-      background: var(--panel-2);
+      background: var(--panel-elevated);
       color: var(--accent);
-    }
-
-    .edit-btn.active-c {
-      color: var(--accent);
-      opacity: 1;
     }
 
     .meta .edit-fields {
@@ -390,10 +1011,10 @@
       background: var(--panel-2);
       border: 1px solid var(--line);
       color: var(--text);
-      border-radius: 8px;
-      padding: .35rem .6rem;
-      font-family: 'Inter', sans-serif;
-      font-size: .8rem;
+      border-radius: var(--radius-sm);
+      padding: 0.35rem 0.6rem;
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
       outline: none;
     }
 
@@ -401,70 +1022,64 @@
       border-color: var(--accent);
     }
 
-    .meta .edit-fields input.title-input {
-      font-weight: 500;
-    }
-
-    .meta .edit-fields input.artist-input {
-      font-size: .75rem;
-      color: var(--muted);
-    }
-
     .save-btn {
       background: none;
       border: none;
       color: var(--accent);
       cursor: pointer;
-      padding: .35rem;
+      padding: 0.35rem;
       border-radius: 50%;
       display: grid;
       place-items: center;
       flex-shrink: 0;
-      transition: background .15s ease;
     }
 
-    .save-btn:hover {
-      background: var(--panel-2);
+    /* Touch screen fallback */
+    @media (hover: none), (max-width: 1024px) {
+      ul.tracklist li .remove-btn,
+      ul.tracklist li .edit-btn,
+      ul.tracklist li .reorder-btns {
+        opacity: 0.85;
+      }
     }
 
-    /* bottom player bar */
+    /* ==========================================================================
+       7. CLAUDE BOTTOM PLAYER BAR
+       ========================================================================== */
     .player-bar {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
       border-top: 1px solid var(--line);
-      background: rgba(20, 18, 16, 0.92);
-      backdrop-filter: blur(10px);
+      background: rgba(23, 21, 19, 0.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 100;
     }
 
     .player-inner {
-      max-width: 880px;
+      max-width: 860px;
       margin: 0 auto;
-      padding: .85rem 1.25rem 1rem;
+      padding: 0.75rem 1.25rem 0.95rem;
     }
 
     .progress-row {
       display: flex;
       align-items: center;
-      gap: .5rem;
-      margin-bottom: .5rem;
+      gap: 0.6rem;
+      margin-bottom: 0.45rem;
     }
 
     .time {
-      font-size: .65rem;
+      font-size: 0.68rem;
       color: var(--muted);
-      width: 34px;
+      width: 36px;
       flex-shrink: 0;
     }
 
-    .time.right {
-      text-align: left;
-    }
-
-    .time.left {
-      text-align: right;
-    }
+    .time.right { text-align: left; }
+    .time.left { text-align: right; }
 
     input[type=range] {
       -webkit-appearance: none;
@@ -475,6 +1090,7 @@
       flex: 1;
       cursor: pointer;
       accent-color: var(--accent);
+      outline: none;
     }
 
     input[type=range]::-webkit-slider-thumb {
@@ -484,35 +1100,38 @@
       border-radius: 50%;
       background: var(--accent);
       cursor: pointer;
+      box-shadow: 0 0 6px var(--accent-glow);
+      transition: transform 0.1s;
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
     }
 
     .controls-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: .75rem;
+      gap: 0.75rem;
     }
 
     .track-info {
       display: flex;
       align-items: center;
-      gap: .75rem;
+      gap: 0.75rem;
       min-width: 0;
       flex: 1;
     }
 
     .mini-disc {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius-md);
       flex-shrink: 0;
       border: 1px solid var(--line);
       background: var(--panel);
       display: grid;
       place-items: center;
-    }
-
-    .mini-disc svg {
       color: var(--accent);
     }
 
@@ -521,25 +1140,67 @@
     }
 
     .track-info .txt .title {
-      font-size: .875rem;
-      font-weight: 500;
+      font-size: 0.86rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text);
+    }
+
+    .track-info .txt .artist {
+      font-size: 0.73rem;
+      color: var(--text-secondary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .track-info .txt .artist {
-      font-size: .75rem;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    /* Output Route & Normalizer Badges in Player */
+    .player-badges-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 3px;
+    }
+
+    .route-badge-btn,
+    .norm-badge-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 0.67rem;
+      padding: 1px 7px;
+      border-radius: var(--radius-full);
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+
+    .route-badge-btn:hover,
+    .norm-badge-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .route-badge-btn.earphone {
+      color: var(--accent);
+      border-color: rgba(217, 119, 87, 0.4);
+      background: var(--accent-subtle);
+    }
+
+    .norm-badge-btn.active {
+      color: var(--success);
+      border-color: rgba(94, 184, 132, 0.35);
+      background: rgba(94, 184, 132, 0.1);
     }
 
     .btns {
       display: flex;
       align-items: center;
-      gap: .3rem;
+      gap: 0.35rem;
     }
 
     .btn {
@@ -547,11 +1208,11 @@
       border: none;
       color: var(--text);
       cursor: pointer;
-      padding: .5rem;
+      padding: 0.5rem;
       border-radius: 50%;
       display: grid;
       place-items: center;
-      transition: background .15s ease, color .15s ease;
+      transition: background 0.15s ease, color 0.15s ease;
     }
 
     .btn:hover {
@@ -567,67 +1228,43 @@
     }
 
     .btn:disabled {
-      opacity: .3;
+      opacity: 0.25;
       cursor: not-allowed;
     }
 
-    .btn:disabled:hover {
-      background: none;
-    }
-
     .play-btn {
-      width: 42px;
-      height: 42px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background: var(--accent);
-      color: #1A1410;
+      color: #171513;
     }
 
-    .play-btn:hover {
-      background: var(--accent-2);
+    .play-btn:hover:not(:disabled) {
+      background: var(--accent-hover);
     }
 
     .volume-row {
       display: none;
       align-items: center;
-      gap: .5rem;
+      gap: 0.5rem;
       flex: 1;
       justify-content: flex-end;
     }
 
     .volume-row input[type=range] {
-      width: 90px;
+      width: 85px;
       flex: none;
     }
 
-    @media(min-width:640px) {
-      .track-info .txt {
-        display: block;
-      }
-
-      .volume-row {
-        display: flex;
-      }
+    @media(min-width: 640px) {
+      .volume-row { display: flex; }
     }
 
-    .track-info .txt {
-      display: none;
-    }
-
-    @media(min-width:480px) {
-      .track-info .txt {
-        display: block;
-      }
-    }
-
-    /* Responsive styles for mobile (max-width: 640px) */
+    /* Mobile Responsive Controls */
     @media(max-width: 640px) {
       .wrap {
-        padding-bottom: 12.5rem; /* More space for taller bottom bar */
-      }
-
-      .player-inner {
-        padding: .6rem 1rem .8rem;
+        padding-bottom: 13rem;
       }
 
       .controls-row {
@@ -636,17 +1273,13 @@
           "info volume"
           "btns btns";
         grid-template-columns: 1fr auto;
-        gap: .5rem;
+        gap: 0.5rem;
         align-items: center;
       }
 
       .track-info {
         grid-area: info;
         min-width: 0;
-      }
-
-      .track-info .txt {
-        display: block !important; /* Always show title & artist on mobile */
       }
 
       .volume-row {
@@ -659,94 +1292,226 @@
         grid-area: btns;
         width: 100%;
         justify-content: center;
-        gap: .5rem;
+        gap: 0.6rem;
       }
 
       .btn {
-        padding: .7rem; /* Larger touch target size */
-      }
-
-      .play-btn {
-        width: 44px;
-        height: 44px;
+        padding: 0.65rem;
       }
     }
 
-    /* Hide volume slider on very small screens to avoid clutter, keep mute btn */
-    @media(max-width: 400px) {
-      .volume-row input[type=range] {
-        display: none !important;
-      }
+    /* ==========================================================================
+       8. MODAL: AUDIO OUTPUT DEVICE SELECTOR
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 2000;
+      display: none;
+      place-items: center;
+      padding: 1rem;
     }
 
-    /* Make action buttons visible on touch/mobile devices since hover is unavailable */
-    @media (hover: none) {
-      ul.tracklist li .remove-btn,
-      ul.tracklist li .edit-btn,
-      ul.tracklist li .reorder-btns {
-        opacity: 0.8;
-      }
-    }
-    @media (max-width: 1024px) {
-      ul.tracklist li .remove-btn,
-      ul.tracklist li .edit-btn,
-      ul.tracklist li .reorder-btns {
-        opacity: 0.8;
-      }
+    .modal-backdrop.open {
+      display: grid;
     }
 
-    /* Responsive Header for mobile */
-    @media(max-width: 480px) {
-      header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 1rem;
-      }
-      header > div:last-child {
-        width: 100%;
-        justify-content: space-between !important;
-      }
+    .claude-modal {
+      background: #1C1916;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      width: 100%;
+      max-width: 440px;
+      box-shadow: var(--shadow-floating);
+      overflow: hidden;
+      animation: modal-pop 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
     }
 
-    ::selection {
-      background: var(--accent);
-      color: #1A1410;
+    @keyframes modal-pop {
+      from { transform: scale(0.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
     }
 
-    .install-btn {
+    .modal-header {
+      padding: 1.1rem 1.35rem;
+      border-bottom: 1px solid var(--line);
       display: flex;
       align-items: center;
-      gap: .4rem;
+      justify-content: space-between;
+    }
+
+    .modal-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .modal-title-group h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .modal-close-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+    }
+
+    .modal-close-btn:hover {
+      color: var(--text);
+      background: var(--panel-2);
+    }
+
+    .modal-body {
+      padding: 1.25rem 1.35rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .active-device-box {
+      background: var(--panel-2);
+      border: 1px solid rgba(217, 119, 87, 0.3);
+      border-radius: var(--radius-md);
+      padding: 0.9rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .pulse-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      animation: pulse-ring 1.8s infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.9); opacity: 0.8; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.8; }
+    }
+
+    .device-info-text strong {
+      font-size: 0.86rem;
+      color: var(--text);
+      display: block;
+    }
+
+    .device-info-text small {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      display: block;
+      margin-top: 2px;
+    }
+
+    .device-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .device-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.6rem 0.8rem;
+      border-radius: var(--radius-sm);
       background: var(--panel);
       border: 1px solid var(--line);
-      color: var(--text);
-      padding: .5rem .8rem;
-      border-radius: 999px;
       cursor: pointer;
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: .75rem;
-      font-weight: 600;
-      transition: border-color .15s ease, color .15s ease;
-      flex-shrink: 0;
+      font-size: 0.8rem;
+      color: var(--text);
+      transition: border-color 0.15s, background 0.15s;
     }
 
-    .install-btn:hover {
+    .device-item:hover {
       border-color: var(--accent);
+      background: var(--panel-2);
+    }
+
+    .device-item.active {
+      border-color: var(--accent);
+      background: var(--accent-subtle);
       color: var(--accent);
+      font-weight: 500;
     }
 
-    .install-btn svg {
-      flex-shrink: 0;
+    .info-callout {
+      background: rgba(217, 119, 87, 0.08);
+      border: 1px solid rgba(217, 119, 87, 0.2);
+      border-radius: var(--radius-md);
+      padding: 0.8rem 0.95rem;
+      display: flex;
+      gap: 0.65rem;
+      font-size: 0.75rem;
+      line-height: 1.45;
+      color: var(--text-secondary);
     }
 
-    @media(max-width:420px) {
-      .install-btn span {
-        display: none;
-      }
+    .info-callout strong {
+      color: var(--text);
+      display: block;
+      margin-bottom: 2px;
+    }
 
-      .install-btn {
-        padding: .5rem;
-      }
+    /* ==========================================================================
+       9. CLAUDE TOAST NOTIFICATIONS
+       ========================================================================== */
+    .toast-container {
+      position: fixed;
+      top: 64px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2500;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      pointer-events: none;
+    }
+
+    .claude-toast {
+      pointer-events: auto;
+      background: #181513;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-full);
+      padding: 0.55rem 1.1rem;
+      color: var(--text);
+      font-size: 0.78rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+      animation: toast-in 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+      transition: opacity 0.25s, transform 0.25s;
+    }
+
+    .claude-toast.earphone-pause {
+      border-color: rgba(224, 108, 83, 0.4);
+      background: #1F1916;
+    }
+
+    .claude-toast.earphone-play {
+      border-color: rgba(94, 184, 132, 0.4);
+      background: #161D18;
+    }
+
+    @keyframes toast-in {
+      from { transform: translateY(-16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
 
     .offline-pill {
@@ -765,7 +1530,6 @@
       gap: .4rem;
       z-index: 50;
       transition: transform .25s ease;
-      font-family: 'Space Grotesk', sans-serif;
     }
 
     .offline-pill.show {
@@ -776,138 +1540,141 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: var(--accent-2);
-      flex-shrink: 0;
-    }
-
-    /* tiktok input container */
-    .tiktok-container {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 1.25rem;
-      margin-bottom: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .tiktok-title {
-      font-family: 'Space Grotesk', sans-serif;
-      font-weight: 600;
-      font-size: 0.95rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .tiktok-title svg {
-      color: var(--accent);
-    }
-
-    .tiktok-input-group {
-      display: flex;
-      gap: 0.75rem;
-    }
-
-    .tiktok-input {
-      flex: 1;
-      background: var(--panel-2);
-      border: 1px solid var(--line);
-      color: var(--text);
-      border-radius: 12px;
-      padding: 0.75rem 1rem;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.875rem;
-      outline: none;
-      transition: border-color 0.15s ease;
-    }
-
-    .tiktok-input:focus {
-      border-color: var(--accent);
-    }
-
-    .tiktok-btn {
       background: var(--accent);
-      color: #1A1410;
-      border: none;
-      border-radius: 12px;
-      padding: 0.75rem 1.5rem;
-      font-family: 'Space Grotesk', sans-serif;
-      font-weight: 600;
-      font-size: 0.875rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: background 0.15s ease, transform 0.1s ease;
       flex-shrink: 0;
-    }
-
-    .tiktok-btn:hover:not(:disabled) {
-      background: #f0b555;
-    }
-
-    .tiktok-btn:active:not(:disabled) {
-      transform: scale(0.98);
-    }
-
-    .tiktok-btn:disabled {
-      background: var(--line);
-      color: var(--muted);
-      cursor: not-allowed;
-    }
-
-    .tiktok-status {
-      font-size: 0.75rem;
-      color: var(--muted);
-      min-height: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .tiktok-status.error {
-      color: var(--danger);
-    }
-
-    .tiktok-status.success {
-      color: #55b87b;
-    }
-
-    .spinner {
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(232, 163, 61, 0.2);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
     }
   </style>
 </head>
 
 <body>
 
+  <!-- Floating Dynamic Island Capsule -->
+  <div class="dynamic-island-wrapper">
+    <div class="dynamic-island" id="dynamicIsland">
+      <!-- Collapsed State -->
+      <div class="island-collapsed" id="islandCollapsed" title="Klik untuk membuka Dynamic Island">
+        <div class="island-art" id="islandArt">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </div>
+        <div class="island-collapsed-info">
+          <span class="island-title" id="islandTitle">Wisnux Player</span>
+          <span class="island-route-chip" id="islandRouteChip">
+            <span id="islandRouteIcon">🎧</span>
+            <span id="islandRouteText">Earphone</span>
+          </span>
+        </div>
+        <div class="island-visualizer" id="islandVisualizer">
+          <i></i><i></i><i></i><i></i>
+        </div>
+        <button class="island-mini-play" id="islandMiniPlay" title="Putar / Jeda">
+          <svg id="islandMiniPlayIcon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Expanded State -->
+      <div class="island-expanded" id="islandExpanded">
+        <div class="expanded-top">
+          <div class="expanded-cover" id="expandedCover">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </div>
+          <div class="expanded-meta">
+            <div class="expanded-title" id="expandedTitle">Tidak ada lagu</div>
+            <div class="expanded-artist" id="expandedArtist">Pilih lagu dari daftar</div>
+            <button class="expanded-route-badge" id="expandedRouteBadge">
+              <span id="expandedRouteIcon">🎧</span>
+              <span id="expandedRouteText">Mengecek Audio...</span>
+            </button>
+          </div>
+          <button class="island-collapse-btn" id="islandCollapseBtn" title="Ciutkan">✕</button>
+        </div>
+
+        <div class="expanded-progress">
+          <span class="time-tag mono" id="expandedCurTime">0:00</span>
+          <input type="range" id="expandedSeekBar" min="0" max="0" value="0" step="0.1" />
+          <span class="time-tag mono" id="expandedDurTime">0:00</span>
+        </div>
+
+        <div class="expanded-actions">
+          <button class="pip-chip-btn" id="islandPipBtn" title="Dynamic Island Mengambang di Beranda HP (PiP)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" />
+              <rect x="12" y="9" width="8" height="6" rx="1" />
+            </svg>
+            <span>PiP Beranda</span>
+          </button>
+
+          <div style="display:flex;align-items:center;gap:0.4rem;">
+            <button class="expanded-ctrl-btn" id="islandPrevBtn" title="Sebelumnya">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="19 20 9 12 19 4 19 20" />
+                <rect x="5" y="4" width="2" height="16" />
+              </svg>
+            </button>
+            <button class="expanded-ctrl-btn expanded-play-main" id="islandPlayBtn" title="Putar">
+              <svg id="islandPlayIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+            </button>
+            <button class="expanded-ctrl-btn" id="islandNextBtn" title="Berikutnya">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 4 15 12 5 20 5 4" />
+                <rect x="17" y="4" width="2" height="16" />
+              </svg>
+            </button>
+          </div>
+
+          <button class="pip-chip-btn" id="islandNormBtn" title="Normalisasi Volume Menyesuaikan HP">
+            <span id="islandNormIcon">⚖️</span>
+            <span id="islandNormText">Volume HP</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Main Container -->
   <div class="wrap">
-    <header>
-      <div class="brand">
-        <div class="disc" id="headerDisc">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    <!-- Claude Aesthetic Header -->
+    <header class="claude-header">
+      <div class="brand-wrap">
+        <div class="claude-disc" id="headerDisc">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10" />
             <circle cx="12" cy="12" r="3" />
           </svg>
         </div>
         <div>
-          <h1 class="display">wisnux song<span> local</span></h1>
-          <p>Pemutar musik lokal — semua diputar dari perangkatmu</p>
+          <div class="brand-heading-row">
+            <h1 class="serif">wisnux song</h1>
+            <span class="claude-pill-badge">✦ Claude Edition</span>
+          </div>
+          <p class="brand-tagline">Pemutar musik pintar & offline — proteksi earphone & normalisasi HP</p>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:1rem;">
+
+      <div class="header-actions">
         <div class="vu" id="headerVu"></div>
-        <button id="installBtn" class="install-btn" style="display:none;" title="Pasang sebagai aplikasi">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
+        <button id="pipHeaderBtn" class="header-pill-btn" title="Jadikan Dynamic Island mengambang di layar HP">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" />
+            <rect x="12" y="9" width="8" height="6" rx="1" />
+          </svg>
+          <span>PiP</span>
+        </button>
+        <button id="installBtn" class="header-pill-btn" style="display:none;" title="Pasang sebagai aplikasi PWA/APK">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
@@ -917,6 +1684,55 @@
       </div>
     </header>
 
+    <!-- Multi-Platform Link Downloader Card -->
+    <div class="claude-card downloader-card">
+      <div class="downloader-header">
+        <div class="downloader-title-group">
+          <div class="downloader-icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+          </div>
+          <div>
+            <h2>Unduh Musik dari Tautan Online</h2>
+            <p>Masukkan link YouTube, TikTok, IG, X/Twitter, Spotify — langsung tersimpan offline di HP</p>
+          </div>
+        </div>
+
+        <div class="platform-pills">
+          <span class="platform-pill active" data-platform="yt">🔴 YouTube</span>
+          <span class="platform-pill active" data-platform="tt">🎵 TikTok</span>
+          <span class="platform-pill active" data-platform="ig">📸 Instagram</span>
+          <span class="platform-pill active" data-platform="x">✖️ X/Twitter</span>
+          <span class="platform-pill active" data-platform="sp">🟢 Spotify</span>
+          <span class="platform-pill active" data-platform="sc">🟠 SoundCloud</span>
+        </div>
+      </div>
+
+      <div class="link-input-row">
+        <div class="link-input-wrapper">
+          <span class="link-input-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </span>
+          <input type="url" id="linkInput" class="claude-input" placeholder="Tempel tautan video/audio (YouTube, TikTok, Instagram Reel, X/Twitter, dll)..." />
+        </div>
+        <button id="linkSubmitBtn" class="claude-btn-primary">
+          <span>Tambah</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="linkStatus" class="download-status-bar" style="display:none;"></div>
+    </div>
+
+    <!-- Local Files Dropzone -->
     <div class="dropzone" id="dropzone">
       <input type="file" id="fileInput" accept="audio/*,video/*" multiple />
       <div class="icon-circle">
@@ -928,44 +1744,31 @@
         </svg>
       </div>
       <div>
-        <strong class="display">Seret file lagu atau video ke sini, atau klik untuk memilih</strong>
-        <small>Mendukung MP3, WAV, OGG, FLAC, M4A, MP4, WEBM, MKV, MOV — diputar langsung dari perangkatmu (hanya suara saja).</small>
+        <strong>Pilih Berkas Lagu atau Video dari HP / Laptop</strong>
+        <small>Mendukung MP3, WAV, FLAC, M4A, OGG, MP4, MKV, WEBM — diproses lokal & disimpan aman di IndexedDB.</small>
       </div>
     </div>
 
-    <!-- TikTok Loader -->
-    <div class="tiktok-container">
-      <div class="tiktok-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 18V5l12-2v13" />
-          <circle cx="6" cy="18" r="3" />
-          <circle cx="18" cy="16" r="3" />
-        </svg>
-        <span>Unduh Musik dari Link TikTok</span>
-      </div>
-      <div class="tiktok-input-group">
-        <input type="url" id="tiktokInput" class="tiktok-input" placeholder="Tempel link TikTok di sini (misal: https://vt.tiktok.com/...)" />
-        <button id="tiktokBtn" class="tiktok-btn">
-          <span>Tambah</span>
-        </button>
-      </div>
-      <div id="tiktokStatus" class="tiktok-status"></div>
+    <!-- Playlist Section -->
+    <div class="playlist-header-row">
+      <span class="playlist-heading">Daftar Putar</span>
+      <span class="playlist-stats" id="playlistStats">0 lagu</span>
     </div>
 
     <div id="emptyState" class="empty">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M9 18V5l12-2v13" />
         <circle cx="6" cy="18" r="3" />
         <circle cx="18" cy="16" r="3" />
       </svg>
-      <p class="t display">Belum ada lagu di daftar putar.</p>
-      <p>Tambahkan berkas untuk mulai memutar.</p>
+      <p class="t serif">Belum ada lagu dalam daftar putar.</p>
+      <p>Tempel tautan video/lagu di atas atau unggah file untuk mulai mendengarkan.</p>
     </div>
 
     <ul class="tracklist" id="tracklist"></ul>
   </div>
 
+  <!-- Claude Bottom Player Bar -->
   <div class="player-bar">
     <div class="player-inner">
       <div class="progress-row">
@@ -973,11 +1776,11 @@
         <input type="range" id="seekBar" min="0" max="0" value="0" step="0.1" />
         <span class="time right mono" id="durTime">0:00</span>
       </div>
+
       <div class="controls-row">
         <div class="track-info">
           <div class="mini-disc" id="barDisc">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10" />
               <circle cx="12" cy="12" r="3" />
             </svg>
@@ -985,12 +1788,22 @@
           <div class="txt">
             <div class="title" id="nowTitle">Tidak ada lagu diputar</div>
             <div class="artist" id="nowArtist">Pilih lagu dari daftar</div>
+            <div class="player-badges-row">
+              <button class="route-badge-btn" id="playerRouteBadge" title="Klik untuk melihat/mengatur rute audio output">
+                <span id="routeIcon">🎧</span>
+                <span id="routeLabel">Earphone</span>
+              </button>
+              <button class="norm-badge-btn active" id="playerNormBadge" title="Klik untuk mengatur normalisasi volume HP">
+                <span>⚖️</span>
+                <span id="normLabel">Volume HP: Adaptif</span>
+              </button>
+            </div>
           </div>
         </div>
 
         <div class="btns">
-          <button class="btn muted-c" id="shuffleBtn" title="Acak">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          <button class="btn muted-c" id="shuffleBtn" title="Putar Acak (Smart Shuffle)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
               <polyline points="16 3 21 3 21 8" />
               <line x1="4" y1="20" x2="21" y2="3" />
@@ -1000,25 +1813,24 @@
             </svg>
           </button>
           <button class="btn" id="prevBtn" title="Sebelumnya" disabled>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor">
               <polygon points="19 20 9 12 19 4 19 20" />
               <rect x="5" y="4" width="2" height="16" />
             </svg>
           </button>
           <button class="btn play-btn" id="playBtn" title="Putar" disabled>
-            <svg id="playIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"
-              style="margin-left:2px;">
+            <svg id="playIcon" width="19" height="19" viewBox="0 0 24 24" fill="currentColor" style="margin-left:2px;">
               <polygon points="5 3 19 12 5 21 5 3" />
             </svg>
           </button>
           <button class="btn" id="nextBtn" title="Berikutnya" disabled>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor">
               <polygon points="5 4 15 12 5 20 5 4" />
               <rect x="17" y="4" width="2" height="16" />
             </svg>
           </button>
           <button class="btn muted-c" id="repeatBtn" title="Ulangi">
-            <svg id="repeatIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            <svg id="repeatIcon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="17 1 21 5 17 9" />
               <path d="M3 11V9a4 4 0 0 1 4-4h14" />
@@ -1030,26 +1842,77 @@
 
         <div class="volume-row">
           <button class="btn muted-c" id="muteBtn" title="Bisukan">
-            <svg id="volIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            <svg id="volIcon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
               <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
             </svg>
           </button>
-          <input type="range" id="volumeBar" min="0" max="1" step="0.01" value="0.8" />
+          <input type="range" id="volumeBar" min="0" max="1" step="0.01" value="0.75" />
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Audio Output Routing Modal -->
+  <div class="modal-backdrop" id="outputModalBackdrop">
+    <div class="claude-modal">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+            <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+          </svg>
+          <h3>Status & Rute Audio Output</h3>
+        </div>
+        <button class="modal-close-btn" id="closeOutputModalBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="active-device-box">
+          <span class="pulse-dot"></span>
+          <div class="device-info-text">
+            <strong id="activeDeviceTitle">Mendeteksi perangkat...</strong>
+            <small id="activeDeviceSubtitle">Rute audio otomatis browser</small>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:0.4rem;">
+            Daftar Perangkat yang Terdeteksi:
+          </label>
+          <div class="device-list" id="deviceListEl">
+            <div class="device-item active">
+              <span>🎧 Earphone / Default Audio Out</span>
+              <small style="color:var(--accent);">Aktif</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-callout">
+          <span style="font-size:1.1rem;flex-shrink:0;">🛡️</span>
+          <div>
+            <strong>Fitur Proteksi Earphone Aktif:</strong>
+            Saat earphone/headphone terputus, lagu langsung dijeda otomatis agar tidak berisik di tempat umum. Saat dicolok/dihubungkan lagi, lagu akan langsung otomatis melanjutkan pemutaran.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden elements for Canvas/Video Picture-in-Picture Dynamic Island -->
+  <canvas id="pipCanvas" width="512" height="512" style="display:none;"></canvas>
+  <video id="pipVideo" autoplay muted playsinline style="display:none;"></video>
+
   <div class="offline-pill" id="offlinePill"><span class="dot"></span> Mode offline — aplikasi tetap berjalan</div>
+  <audio id="audio" preload="auto" playsinline crossorigin="anonymous"></audio>
 
-  <audio id="audio" preload="auto" playsinline></audio>
-
+  <!-- ==========================================================================
+       10. APPLICATION JAVASCRIPT LOGIC
+       ========================================================================== -->
   <script>
     (function () {
-      // ---------- state ----------
-      let tracks = [];       // {id, file, url, title, artist}
+      // ---------- State ----------
+      let tracks = [];
       let currentIndex = -1;
       let isPlaying = false;
       let shuffle = false;
@@ -1058,6 +1921,18 @@
       let shufflePool = [];
       let shuffleHistory = [];
 
+      // Earphone disconnect auto-pause / auto-resume state
+      let wasPlayingBeforeDisconnect = false;
+      let lastKnownHeadphonesConnected = false;
+      let activeOutputDeviceId = 'default';
+      let activeOutputDeviceLabel = 'Speaker / Default';
+
+      // Audio interruption tracking
+      let isAudioInterrupted = false;
+
+      // Smart Volume Normalization mode: "adaptive" | "gentle" | "bypass"
+      let volumeNormMode = "adaptive";
+
       // ---------- IndexedDB Helper ----------
       const DB_NAME = "WisnuxSongDB";
       const DB_VERSION = 1;
@@ -1065,10 +1940,10 @@
 
       function openDB() {
         return new Promise((resolve, reject) => {
-          const request = indexedDB.open(DB_NAME, DB_VERSION);
-          request.onerror = (e) => reject(e.target.error);
-          request.onsuccess = (e) => resolve(e.target.result);
-          request.onupgradeneeded = (e) => {
+          const req = indexedDB.open(DB_NAME, DB_VERSION);
+          req.onerror = (e) => reject(e.target.error);
+          req.onsuccess = (e) => resolve(e.target.result);
+          req.onupgradeneeded = (e) => {
             const db = e.target.result;
             if (!db.objectStoreNames.contains(STORE_NAME)) {
               db.createObjectStore(STORE_NAME, { keyPath: "id" });
@@ -1080,11 +1955,11 @@
       function getAllSongs() {
         return openDB().then(db => {
           return new Promise((resolve, reject) => {
-            const transaction = db.transaction(STORE_NAME, "readonly");
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.getAll();
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
+            const tx = db.transaction(STORE_NAME, "readonly");
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
           });
         });
       }
@@ -1092,12 +1967,11 @@
       function saveSong(song) {
         return openDB().then(db => {
           return new Promise((resolve, reject) => {
-            const transaction = db.transaction(STORE_NAME, "readwrite");
-            const store = transaction.objectStore(STORE_NAME);
-            // Simpan objek lagu. IndexedDB mendukung penyimpanan objek File/Blob secara langsung.
-            const request = store.put(song);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
+            const tx = db.transaction(STORE_NAME, "readwrite");
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.put(song);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
           });
         });
       }
@@ -1105,21 +1979,22 @@
       function deleteSong(id) {
         return openDB().then(db => {
           return new Promise((resolve, reject) => {
-            const transaction = db.transaction(STORE_NAME, "readwrite");
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.delete(id);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
+            const tx = db.transaction(STORE_NAME, "readwrite");
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.delete(id);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
           });
         });
       }
 
-      // ---------- elements ----------
+      // ---------- Elements ----------
       const audio = document.getElementById('audio');
       const dropzone = document.getElementById('dropzone');
       const fileInput = document.getElementById('fileInput');
       const tracklistEl = document.getElementById('tracklist');
       const emptyState = document.getElementById('emptyState');
+      const playlistStats = document.getElementById('playlistStats');
 
       const seekBar = document.getElementById('seekBar');
       const curTimeEl = document.getElementById('curTime');
@@ -1144,16 +2019,508 @@
       const barDisc = document.getElementById('barDisc');
       const headerVu = document.getElementById('headerVu');
 
-      let muted = false;
-      let lastVolume = 0.8;
+      // Dynamic Island elements
+      const dynamicIsland = document.getElementById('dynamicIsland');
+      const islandArt = document.getElementById('islandArt');
+      const islandTitle = document.getElementById('islandTitle');
+      const islandRouteChip = document.getElementById('islandRouteChip');
+      const islandRouteIcon = document.getElementById('islandRouteIcon');
+      const islandRouteText = document.getElementById('islandRouteText');
+      const islandVisualizer = document.getElementById('islandVisualizer');
+      const islandMiniPlay = document.getElementById('islandMiniPlay');
+      const islandMiniPlayIcon = document.getElementById('islandMiniPlayIcon');
 
-      // ---------- build VU meter bars ----------
+      const expandedTitle = document.getElementById('expandedTitle');
+      const expandedArtist = document.getElementById('expandedArtist');
+      const expandedRouteBadge = document.getElementById('expandedRouteBadge');
+      const expandedSeekBar = document.getElementById('expandedSeekBar');
+      const expandedCurTime = document.getElementById('expandedCurTime');
+      const expandedDurTime = document.getElementById('expandedDurTime');
+      const islandPrevBtn = document.getElementById('islandPrevBtn');
+      const islandPlayBtn = document.getElementById('islandPlayBtn');
+      const islandPlayIcon = document.getElementById('islandPlayIcon');
+      const islandNextBtn = document.getElementById('islandNextBtn');
+      const islandPipBtn = document.getElementById('islandPipBtn');
+      const islandNormBtn = document.getElementById('islandNormBtn');
+      const islandCollapseBtn = document.getElementById('islandCollapseBtn');
+
+      // Output modal & Badges
+      const playerRouteBadge = document.getElementById('playerRouteBadge');
+      const routeIcon = document.getElementById('routeIcon');
+      const routeLabel = document.getElementById('routeLabel');
+      const playerNormBadge = document.getElementById('playerNormBadge');
+      const normLabel = document.getElementById('normLabel');
+
+      const outputModalBackdrop = document.getElementById('outputModalBackdrop');
+      const closeOutputModalBtn = document.getElementById('closeOutputModalBtn');
+      const activeDeviceTitle = document.getElementById('activeDeviceTitle');
+      const activeDeviceSubtitle = document.getElementById('activeDeviceSubtitle');
+      const deviceListEl = document.getElementById('deviceListEl');
+
+      const toastContainer = document.getElementById('toastContainer');
+      const pipHeaderBtn = document.getElementById('pipHeaderBtn');
+
+      let muted = false;
+      let lastVolume = 0.75;
+
+      // ---------- Toast Notifications ----------
+      function showToast(message, type = '', duration = 3400) {
+        const toast = document.createElement('div');
+        toast.className = `claude-toast ${type}`;
+        toast.innerHTML = message;
+        toastContainer.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(-10px)';
+          setTimeout(() => toast.remove(), 260);
+        }, duration);
+      }
+
+      // ---------- Web Audio API: Volume Normalization & Dynamics Compressor ----------
+      let audioCtx = null;
+      let mediaSourceNode = null;
+      let compressorNode = null;
+      let gainNode = null;
+      let audioNodesConnected = false;
+
+      function setupWebAudioSystem() {
+        try {
+          if (!audioCtx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+              audioCtx = new AudioCtx();
+            }
+          }
+          if (!audioCtx) return;
+
+          if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+
+          if (!audioNodesConnected) {
+            mediaSourceNode = audioCtx.createMediaElementSource(audio);
+            compressorNode = audioCtx.createDynamicsCompressor();
+            gainNode = audioCtx.createGain();
+
+            applyCompressorMode(volumeNormMode);
+
+            // Chain: source -> compressor -> gain -> destination
+            mediaSourceNode.connect(compressorNode);
+            compressorNode.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            audioNodesConnected = true;
+          }
+
+          // Handle system level interruptions (phone calls, alarms)
+          audioCtx.onstatechange = () => {
+            if (audioCtx.state === 'interrupted') {
+              if (isPlaying) {
+                audio.pause();
+                wasPlayingBeforeDisconnect = true;
+                showToast('⏳ Panggilan/sistem menginterupsi audio — dijeda', 'earphone-pause');
+              }
+            } else if (audioCtx.state === 'running' && wasPlayingBeforeDisconnect) {
+              audio.play().catch(() => {});
+              wasPlayingBeforeDisconnect = false;
+              showToast('✓ Audio dilanjutkan kembali', 'earphone-play');
+            }
+          };
+        } catch (e) {
+          console.warn("Web Audio setup notice:", e);
+        }
+      }
+
+      function applyCompressorMode(mode) {
+        if (!compressorNode || !gainNode || !audioCtx) return;
+        const now = audioCtx.currentTime;
+
+        if (mode === "adaptive") {
+          // Menyesuaikan dengan HP: Normalisasi cerdas agar volume lagu seimbang dengan volume HP
+          compressorNode.threshold.setValueAtTime(-24, now);
+          compressorNode.knee.setValueAtTime(28, now);
+          compressorNode.ratio.setValueAtTime(12, now);
+          compressorNode.attack.setValueAtTime(0.003, now);
+          compressorNode.release.setValueAtTime(0.25, now);
+          gainNode.gain.setValueAtTime(1.15, now);
+        } else if (mode === "gentle") {
+          // Mode Lembut (Malam/Santai)
+          compressorNode.threshold.setValueAtTime(-30, now);
+          compressorNode.knee.setValueAtTime(32, now);
+          compressorNode.ratio.setValueAtTime(16, now);
+          compressorNode.attack.setValueAtTime(0.002, now);
+          compressorNode.release.setValueAtTime(0.3, now);
+          gainNode.gain.setValueAtTime(0.85, now);
+        } else {
+          // Bypass: Natural Dynamic Range
+          compressorNode.threshold.setValueAtTime(0, now);
+          compressorNode.ratio.setValueAtTime(1, now);
+          gainNode.gain.setValueAtTime(1.0, now);
+        }
+      }
+
+      function cycleVolumeNormMode() {
+        if (volumeNormMode === "adaptive") {
+          volumeNormMode = "gentle";
+          normLabel.textContent = "Volume HP: Lembut";
+          showToast('🌙 Mode Lembut aktif: kenyaringan diperhalus untuk suasana santai');
+        } else if (volumeNormMode === "gentle") {
+          volumeNormMode = "bypass";
+          normLabel.textContent = "Volume HP: Asli (Non-aktif)";
+          playerNormBadge.classList.remove('active');
+          showToast('⚡ Mode Asli aktif: kompresi dinamis dinonaktifkan');
+        } else {
+          volumeNormMode = "adaptive";
+          normLabel.textContent = "Volume HP: Adaptif";
+          playerNormBadge.classList.add('active');
+          showToast('⚖️ Mode Adaptif HP aktif: volume lagu disesuaikan agar stabil dengan volume HP');
+        }
+        applyCompressorMode(volumeNormMode);
+      }
+
+      playerNormBadge.addEventListener('click', cycleVolumeNormMode);
+      islandNormBtn.addEventListener('click', cycleVolumeNormMode);
+
+      // ---------- Audio Output Device Manager & Earphone Protection ----------
+      async function inspectAudioOutputDevices() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+          activeOutputDeviceLabel = "Speaker / Earphone HP";
+          updateOutputUI(false);
+          return;
+        }
+
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const audioOutputs = devices.filter(d => d.kind === 'audiooutput');
+
+          let hasEarphones = false;
+          let bestLabel = 'Speaker Internal / HP';
+
+          // Detect earphones / headphones / bluetooth
+          devices.forEach(d => {
+            const lbl = (d.label || '').toLowerCase();
+            if (
+              lbl.includes('headphone') || lbl.includes('earphone') ||
+              lbl.includes('headset') || lbl.includes('airpod') ||
+              lbl.includes('bluetooth') || lbl.includes('buds') ||
+              lbl.includes('handsfree') || lbl.includes('tws')
+            ) {
+              hasEarphones = true;
+              bestLabel = d.label || 'Earphone / Headphone';
+            }
+          });
+
+          // Otomatisasi Proteksi Earphone Terputus & Terhubung
+          if (lastKnownHeadphonesConnected && !hasEarphones) {
+            // Earphone baru saja terputus!
+            if (isPlaying) {
+              pause();
+              wasPlayingBeforeDisconnect = true;
+              showToast('🎧 <strong>Earphone terputus!</strong> Musik dijeda otomatis demi kenyamanan.', 'earphone-pause', 4500);
+            }
+          } else if (!lastKnownHeadphonesConnected && hasEarphones) {
+            // Earphone baru saja terhubung kembali!
+            if (wasPlayingBeforeDisconnect) {
+              play();
+              wasPlayingBeforeDisconnect = false;
+              showToast('🎧 <strong>Earphone terhubung kembali!</strong> Melanjutkan musik otomatis.', 'earphone-play', 4500);
+            } else {
+              showToast('🎧 Earphone terdeteksi siap digunakan.', 'earphone-play', 2800);
+            }
+          }
+
+          lastKnownHeadphonesConnected = hasEarphones;
+          activeOutputDeviceLabel = hasEarphones ? bestLabel : 'Speaker HP / Default';
+          updateOutputUI(hasEarphones, audioOutputs);
+        } catch (err) {
+          console.warn("Device inspection warning:", err);
+        }
+      }
+
+      function updateOutputUI(isEarphone, deviceList = []) {
+        const icon = isEarphone ? '🎧' : '🔊';
+        const shortName = isEarphone ? 'Earphone' : 'Speaker HP';
+
+        // Update player bar badge
+        routeIcon.textContent = icon;
+        routeLabel.textContent = activeOutputDeviceLabel.length > 20 
+          ? activeOutputDeviceLabel.slice(0, 18) + '...' 
+          : activeOutputDeviceLabel;
+        playerRouteBadge.classList.toggle('earphone', isEarphone);
+
+        // Update Dynamic Island
+        islandRouteIcon.textContent = icon;
+        islandRouteText.textContent = shortName;
+        expandedRouteBadge.innerHTML = `<span>${icon}</span> <span>${escapeHtml(activeOutputDeviceLabel)}</span>`;
+
+        // Update Modal
+        activeDeviceTitle.textContent = activeOutputDeviceLabel;
+        activeDeviceSubtitle.textContent = isEarphone 
+          ? 'Tersambung ke Earphone / Headset (Proteksi Aktif)' 
+          : 'Keluaran standar (Speaker Perangkat)';
+
+        // Populate device list in modal
+        if (deviceList.length > 0) {
+          deviceListEl.innerHTML = '';
+          deviceList.forEach(dev => {
+            const item = document.createElement('div');
+            const isCur = dev.deviceId === activeOutputDeviceId || (activeOutputDeviceId === 'default' && !dev.deviceId);
+            item.className = `device-item ${isCur ? 'active' : ''}`;
+            const devName = dev.label || `Output Audio (${dev.deviceId ? dev.deviceId.slice(0, 8) : 'Default'})`;
+            item.innerHTML = `<span>${isEarphone ? '🎧' : '🔊'} ${escapeHtml(devName)}</span>${isCur ? '<small style="color:var(--accent);">Dipilih</small>' : ''}`;
+            
+            item.addEventListener('click', async () => {
+              if (audio.setSinkId && dev.deviceId) {
+                try {
+                  await audio.setSinkId(dev.deviceId);
+                  activeOutputDeviceId = dev.deviceId;
+                  activeOutputDeviceLabel = devName;
+                  inspectAudioOutputDevices();
+                  showToast(`✓ Rute audio dialihkan ke: ${devName}`);
+                } catch (e) {
+                  showToast(`Tidak dapat mengalihkan rute audio: ${e.message}`);
+                }
+              }
+            });
+            deviceListEl.appendChild(item);
+          });
+        }
+      }
+
+      // Listen for hardware audio output device changes (plugs, bluetooth, etc.)
+      if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+        navigator.mediaDevices.addEventListener('devicechange', () => {
+          inspectAudioOutputDevices();
+        });
+      }
+
+      // Earphone / Interruption Listeners on Audio Element
+      audio.addEventListener('waiting', () => {
+        isAudioInterrupted = true;
+        islandVisualizer.classList.remove('active');
+        showToast('⏳ Sinyal audio buffering / stabilisasi...', '', 2000);
+      });
+
+      audio.addEventListener('stalled', () => {
+        isAudioInterrupted = true;
+        islandVisualizer.classList.remove('active');
+      });
+
+      audio.addEventListener('playing', () => {
+        if (isAudioInterrupted) {
+          isAudioInterrupted = false;
+          islandVisualizer.classList.add('active');
+          showToast('✓ Audio normal kembali', '', 1800);
+        }
+      });
+
+      // Output modal open / close
+      function openOutputModal() {
+        outputModalBackdrop.classList.add('open');
+        inspectAudioOutputDevices();
+      }
+      function closeOutputModal() {
+        outputModalBackdrop.classList.remove('open');
+      }
+
+      playerRouteBadge.addEventListener('click', openOutputModal);
+      expandedRouteBadge.addEventListener('click', openOutputModal);
+      closeOutputModalBtn.addEventListener('click', closeOutputModal);
+      outputModalBackdrop.addEventListener('click', (e) => {
+        if (e.target === outputModalBackdrop) closeOutputModal();
+      });
+
+      // ---------- Dynamic Island Interactions ----------
+      function expandIsland() {
+        dynamicIsland.classList.add('expanded');
+      }
+
+      function collapseIsland(e) {
+        if (e) e.stopPropagation();
+        dynamicIsland.classList.remove('expanded');
+      }
+
+      dynamicIsland.addEventListener('click', (e) => {
+        if (!dynamicIsland.classList.contains('expanded')) {
+          expandIsland();
+        }
+      });
+
+      islandCollapseBtn.addEventListener('click', collapseIsland);
+
+      islandMiniPlay.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePlay();
+      });
+
+      islandPlayBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePlay();
+      });
+
+      islandPrevBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playPrev();
+      });
+
+      islandNextBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playNext();
+      });
+
+      expandedSeekBar.addEventListener('input', () => {
+        audio.currentTime = Number(expandedSeekBar.value);
+        updatePositionState();
+      });
+
+      // ---------- Picture-in-Picture (Dynamic Island Floating in Home Screen) ----------
+      const pipCanvas = document.getElementById('pipCanvas');
+      const pipVideo = document.getElementById('pipVideo');
+      let pipCtx = pipCanvas.getContext('2d');
+      let pipAnimFrame = null;
+
+      function renderPiPFrame() {
+        pipCtx.fillStyle = '#141210';
+        pipCtx.fillRect(0, 0, 512, 512);
+
+        // Draw pill capsule
+        pipCtx.fillStyle = '#221E1A';
+        pipCtx.strokeStyle = isPlaying ? '#D97757' : '#3E362E';
+        pipCtx.lineWidth = 4;
+        roundRect(pipCtx, 36, 60, 440, 392, 40, true, true);
+
+        // Header
+        pipCtx.fillStyle = '#D97757';
+        pipCtx.font = 'bold 22px sans-serif';
+        pipCtx.fillText('✦ Wisnux Dynamic Island', 64, 110);
+
+        // Title
+        pipCtx.fillStyle = '#F5EFE6';
+        pipCtx.font = 'bold 26px sans-serif';
+        const t = tracks[currentIndex];
+        const titleText = t ? t.title : 'Tidak ada lagu';
+        pipCtx.fillText(titleText.slice(0, 24), 64, 175);
+
+        // Artist & Output Device
+        pipCtx.fillStyle = '#A89F93';
+        pipCtx.font = '20px sans-serif';
+        const artistText = t ? t.artist : 'Pilih lagu dari web';
+        pipCtx.fillText(artistText.slice(0, 28), 64, 215);
+
+        // Output badge
+        pipCtx.fillStyle = '#2C2722';
+        roundRect(pipCtx, 64, 245, 260, 42, 21, true, false);
+        pipCtx.fillStyle = '#D97757';
+        pipCtx.font = '16px sans-serif';
+        pipCtx.fillText(`🎧 ${activeOutputDeviceLabel.slice(0, 20)}`, 80, 272);
+
+        // Progress bar
+        const progress = (audio.duration && isFinite(audio.duration)) ? (audio.currentTime / audio.duration) : 0;
+        pipCtx.fillStyle = '#332D26';
+        roundRect(pipCtx, 64, 330, 384, 10, 5, true, false);
+        pipCtx.fillStyle = '#D97757';
+        roundRect(pipCtx, 64, 330, Math.max(10, 384 * progress), 10, 5, true, false);
+
+        // Time
+        pipCtx.fillStyle = '#7E756B';
+        pipCtx.font = '16px monospace';
+        pipCtx.fillText(fmtTime(audio.currentTime), 64, 365);
+        pipCtx.fillText(fmtTime(audio.duration), 405, 365);
+
+        // Playing status
+        pipCtx.fillStyle = isPlaying ? '#5EB884' : '#E8A33D';
+        pipCtx.beginPath();
+        pipCtx.arc(430, 102, 8, 0, Math.PI * 2);
+        pipCtx.fill();
+
+        if (document.pictureInPictureElement === pipVideo) {
+          pipAnimFrame = requestAnimationFrame(renderPiPFrame);
+        }
+      }
+
+      function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+        if (fill) ctx.fill();
+        if (stroke) ctx.stroke();
+      }
+
+      async function triggerPictureInPictureIsland() {
+        try {
+          // 1. Try Document Picture-in-Picture (Chromium 116+)
+          if (window.documentPictureInPicture && window.documentPictureInPicture.requestWindow) {
+            const pipWin = await window.documentPictureInPicture.requestWindow({
+              width: 380,
+              height: 240,
+            });
+
+            // Copy CSS
+            document.querySelectorAll('style, link[rel="stylesheet"]').forEach(el => {
+              pipWin.document.head.appendChild(el.cloneNode(true));
+            });
+
+            pipWin.document.body.innerHTML = `
+              <div style="background:#151311;color:#F5EFE6;padding:1rem;height:100vh;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;font-family:sans-serif;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <span style="font-size:0.75rem;color:#D97757;font-weight:600;">✦ Wisnux Floating Island</span>
+                  <span style="font-size:0.68rem;padding:2px 8px;border-radius:999px;background:#24201C;border:1px solid #3A332B;color:#D97757;">${escapeHtml(activeOutputDeviceLabel.slice(0, 18))}</span>
+                </div>
+                <div>
+                  <div id="pipSongTitle" style="font-weight:600;font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(nowTitle.textContent)}</div>
+                  <div id="pipSongArtist" style="font-size:0.75rem;color:#A89F93;margin-top:2px;">${escapeHtml(nowArtist.textContent)}</div>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;">
+                  <button id="pipPrev" style="background:#282420;border:1px solid #3A332B;color:#fff;border-radius:50%;width:34px;height:34px;cursor:pointer;">⏮</button>
+                  <button id="pipPlay" style="background:#D97757;border:none;color:#171513;border-radius:50%;width:42px;height:42px;font-size:1.1rem;cursor:pointer;">${isPlaying ? '⏸' : '▶'}</button>
+                  <button id="pipNext" style="background:#282420;border:1px solid #3A332B;color:#fff;border-radius:50%;width:34px;height:34px;cursor:pointer;">⏭</button>
+                </div>
+              </div>
+            `;
+
+            pipWin.document.getElementById('pipPlay').addEventListener('click', () => {
+              togglePlay();
+              pipWin.document.getElementById('pipPlay').textContent = isPlaying ? '⏸' : '▶';
+            });
+            pipWin.document.getElementById('pipPrev').addEventListener('click', () => playPrev());
+            pipWin.document.getElementById('pipNext').addEventListener('click', () => playNext());
+
+            showToast('✓ Dynamic Island kini melayang di Layar Utama HP!');
+            return;
+          }
+
+          // 2. Fallback to Canvas Video PiP
+          renderPiPFrame();
+          const stream = pipCanvas.captureStream(15);
+          pipVideo.srcObject = stream;
+          await pipVideo.play();
+          await pipVideo.requestPictureInPicture();
+          showToast('✓ Dynamic Island melayang di Layar Utama (PiP)!');
+        } catch (err) {
+          console.warn("PiP error:", err);
+          showToast('Dynamic Island aktif! Tekan tombol navigasi lock screen untuk kontrol dari luar aplikasi.');
+        }
+      }
+
+      pipHeaderBtn.addEventListener('click', triggerPictureInPictureIsland);
+      islandPipBtn.addEventListener('click', triggerPictureInPictureIsland);
+
+      // ---------- VU Meter Setup ----------
       const VU_BARS = 14;
       for (let i = 0; i < VU_BARS; i++) {
         const bar = document.createElement('i');
         const h = 20 + Math.random() * 80;
         bar.style.setProperty('--h', h + '%');
-        bar.style.height = '12%';
+        bar.style.height = '15%';
         bar.style.animationDuration = (0.5 + (i % 5) * 0.09) + 's';
         bar.style.animationDelay = (i * 0.03) + 's';
         headerVu.appendChild(bar);
@@ -1162,14 +2529,16 @@
       function updateVu(playing) {
         headerVu.classList.toggle('playing', playing);
         headerVu.querySelectorAll('i').forEach(bar => {
-          bar.style.height = playing ? bar.style.getPropertyValue('--h') : '12%';
-          bar.style.opacity = playing ? 0.7 : 0.25;
+          bar.style.height = playing ? bar.style.getPropertyValue('--h') : '15%';
+          bar.style.opacity = playing ? 0.75 : 0.25;
         });
         headerDisc.classList.toggle('spin', playing);
         barDisc.classList.toggle('spin', playing);
+        islandArt.classList.toggle('spinning', playing);
+        islandVisualizer.classList.toggle('active', playing);
       }
 
-      // ---------- helpers ----------
+      // ---------- Helpers ----------
       function fmtTime(s) {
         if (!s || isNaN(s) || !isFinite(s)) return "0:00";
         const m = Math.floor(s / 60);
@@ -1187,6 +2556,7 @@
       }
 
       function escapeHtml(str) {
+        if (!str) return '';
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
@@ -1208,7 +2578,7 @@
         return "audio/mpeg";
       }
 
-      // ---------- file handling ----------
+      // ---------- Add Local Files ----------
       async function addFiles(fileList) {
         const files = Array.from(fileList).filter(f =>
           f.type.startsWith('audio/') || f.type.startsWith('video/') || /\.(mp3|wav|ogg|flac|m4a|aac|mp4|mkv|avi|webm|mov)$/i.test(f.name)
@@ -1219,8 +2589,6 @@
         for (const file of files) {
           const meta = titleFromFilename(file.name);
           const mimeType = getAudioMimeType(file);
-
-          // Re-wrap file dengan MIME type audio/* agar Android Chrome tidak menganggapnya video saat layar HP mati
           const audioFile = new File([file], file.name, { type: mimeType });
 
           const newTrack = {
@@ -1232,14 +2600,13 @@
           };
           tracks.push(newTrack);
 
-          // Simpan ke IndexedDB dan tunggu (await) agar Service Worker langsung bisa menyajikannya via /media-stream
           await saveSong({
             id: newTrack.id,
             file: newTrack.file,
             title: newTrack.title,
             artist: newTrack.artist,
             order: tracks.length - 1
-          }).catch(err => console.error("Gagal menyimpan lagu ke DB:", err));
+          }).catch(err => console.error("Gagal simpan ke DB:", err));
         }
 
         if (shuffle) initShufflePool();
@@ -1248,6 +2615,7 @@
           loadTrack(0);
         }
         updateControlsDisabled();
+        showToast(`✓ Berhasil menambahkan ${files.length} lagu ke daftar`);
       }
 
       fileInput.addEventListener('change', (e) => {
@@ -1264,97 +2632,105 @@
         if (e.dataTransfer.files) addFiles(e.dataTransfer.files);
       });
 
-      // ---------- TikTok Downloader logic ----------
-      const tiktokInput = document.getElementById('tiktokInput');
-      const tiktokBtn = document.getElementById('tiktokBtn');
-      const tiktokStatus = document.getElementById('tiktokStatus');
+      // ---------- Multi-Platform Link Downloader (YouTube, TikTok, IG, X, Spotify, etc.) ----------
+      const linkInput = document.getElementById('linkInput');
+      const linkSubmitBtn = document.getElementById('linkSubmitBtn');
+      const linkStatus = document.getElementById('linkStatus');
 
-      async function fetchTikTokDirectClient(url) {
-        // Fallback langsung dari browser ke TikWM API (dukung CORS)
+      function showLinkStatus(msg, type = '') {
+        linkStatus.style.display = 'flex';
+        linkStatus.className = 'download-status-bar ' + type;
+        linkStatus.innerHTML = msg;
+      }
+
+      function detectPlatformFromUrl(url) {
+        const u = url.toLowerCase();
+        if (u.includes('youtube.com') || u.includes('youtu.be')) return 'YouTube';
+        if (u.includes('tiktok.com') || u.includes('douyin.com')) return 'TikTok';
+        if (u.includes('instagram.com') || u.includes('instagr.am')) return 'Instagram';
+        if (u.includes('twitter.com') || u.includes('x.com')) return 'X/Twitter';
+        if (u.includes('spotify.com')) return 'Spotify';
+        if (u.includes('soundcloud.com')) return 'SoundCloud';
+        if (u.includes('facebook.com') || u.includes('fb.watch')) return 'Facebook';
+        return 'Online';
+      }
+
+      async function fetchTikTokClientFallback(url) {
         const tikwmRes = await fetch('https://www.tikwm.com/api/', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-          },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
           body: new URLSearchParams({ url, hd: '1' })
         });
-        if (!tikwmRes.ok) {
-          throw new Error(`TikWM HTTP ${tikwmRes.status}`);
-        }
+        if (!tikwmRes.ok) throw new Error(`TikWM HTTP ${tikwmRes.status}`);
         const data = await tikwmRes.json();
         if (data.code === 0 && data.data) {
           const title = data.data.title || data.data.music_info?.title || 'Lagu TikTok';
           const artist = data.data.music_info?.author || data.data.author?.nickname || 'Kreator TikTok';
-          const rawAudioUrl = data.data.music || data.data.play || data.data.wmplay;
-          if (rawAudioUrl) {
-            const audioUrl = rawAudioUrl.startsWith('//') ? 'https:' + rawAudioUrl : rawAudioUrl;
+          const raw = data.data.music || data.data.play || data.data.wmplay;
+          if (raw) {
+            const audioUrl = raw.startsWith('//') ? 'https:' + raw : raw;
             return { title, artist, audioUrl };
           }
         }
-        throw new Error(data.msg || 'Tidak dapat mengekstrak audio dari link TikTok ini.');
+        throw new Error('Gagal mengekstrak audio TikTok.');
       }
 
-      async function addSongFromTikTok(url) {
+      async function addSongFromLink(url) {
         if (!url) return;
-        
         const cleanUrl = url.trim();
-        const lowerUrl = cleanUrl.toLowerCase();
-        
-        // Validasi tautan sederhana
-        if (!lowerUrl.includes('tiktok.com')) {
-          showTikTokStatus('Tautan tidak valid. Pastikan itu adalah tautan video/musik TikTok.', 'error');
-          return;
-        }
+        const platformName = detectPlatformFromUrl(cleanUrl);
 
-        tiktokBtn.disabled = true;
-        showTikTokStatus('<div class="spinner"></div> Sedang menganalisis tautan TikTok...', '');
+        linkSubmitBtn.disabled = true;
+        showLinkStatus(`<div class="spinner"></div> Menganalisis tautan ${platformName}...`, '');
 
         try {
           let info = null;
           let audioBlob = null;
 
-          // 1. Coba lewat backend proxy /api/tiktok terlebih dahulu
+          // 1. Coba lewat API backend /api/download (atau /api/tiktok)
           try {
-            const apiRes = await fetch(`/api/tiktok?action=info&url=${encodeURIComponent(cleanUrl)}`);
+            const apiRes = await fetch(`/api/download?action=info&url=${encodeURIComponent(cleanUrl)}`);
             if (apiRes.ok) {
               info = await apiRes.json();
-              showTikTokStatus('<div class="spinner"></div> Mengunduh file musik ke perangkat...', '');
-              const downloadRes = await fetch(info.downloadUrl);
-              if (downloadRes.ok) {
-                audioBlob = await downloadRes.blob();
+              showLinkStatus(`<div class="spinner"></div> Mengunduh audio "${escapeHtml(info.title)}"...`, '');
+              const dlRes = await fetch(info.downloadUrl);
+              if (dlRes.ok) {
+                audioBlob = await dlRes.blob();
               }
+            } else {
+              const errData = await apiRes.json().catch(() => ({}));
+              if (errData.error) throw new Error(errData.error);
             }
           } catch (backendErr) {
-            console.warn('Backend proxy tidak tersedia, beralih ke koneksi langsung...', backendErr);
+            console.warn("Backend API attempt notice:", backendErr.message);
           }
 
-          // 2. Jika backend proxy gagal / tidak tersedia (misal static site), gunakan fallback client-side langsung
-          if (!audioBlob) {
-            showTikTokStatus('<div class="spinner"></div> Mengambil musik secara langsung via API...', '');
-            const clientInfo = await fetchTikTokDirectClient(cleanUrl);
+          // 2. Client-side fallback untuk TikTok
+          if (!audioBlob && cleanUrl.toLowerCase().includes('tiktok.com')) {
+            showLinkStatus(`<div class="spinner"></div> Mencoba koneksi langsung ke TikTok...`, '');
+            const clientInfo = await fetchTikTokClientFallback(cleanUrl);
             info = { title: clientInfo.title, artist: clientInfo.artist };
-            
-            showTikTokStatus('<div class="spinner"></div> Mengunduh file musik...', '');
-            const directAudioRes = await fetch(clientInfo.audioUrl);
-            if (!directAudioRes.ok) {
-              throw new Error('Gagal mengunduh file audio langsung.');
+            const dlRes = await fetch(clientInfo.audioUrl);
+            if (dlRes.ok) {
+              audioBlob = await dlRes.blob();
             }
-            audioBlob = await directAudioRes.blob();
           }
 
-          // 3. Ubah blob menjadi objek File
-          const safeTitleName = info.title.replace(/[^a-zA-Z0-9\s-_]/g, '').trim() || 'tiktok_audio';
-          const fileName = `${safeTitleName}.mp3`;
-          const audioFile = new File([audioBlob], fileName, { type: 'audio/mpeg' });
+          if (!audioBlob) {
+            throw new Error(`Tidak dapat mengunduh audio dari ${platformName}. Pastikan link publik dan dapat diakses.`);
+          }
 
-          // 4. Tambahkan ke track list & simpan di IndexedDB
+          // 3. Simpan sebagai file MP3 offline
+          const safeTitle = (info.title || 'lagu_online').replace(/[^a-zA-Z0-9\s-_]/g, '').trim() || 'audio_wisnux';
+          const audioFile = new File([audioBlob], `${safeTitle}.mp3`, { type: 'audio/mpeg' });
+
           const wasEmpty = tracks.length === 0;
           const newTrack = {
-            id: 'tiktok-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+            id: 'net-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
             file: audioFile,
             url: URL.createObjectURL(audioFile),
-            title: info.title,
-            artist: info.artist
+            title: info.title || 'Lagu Online',
+            artist: info.artist || platformName
           };
 
           tracks.push(newTrack);
@@ -1375,41 +2751,46 @@
           }
           updateControlsDisabled();
 
-          showTikTokStatus(`✓ Berhasil menambahkan: "${escapeHtml(info.title)}" oleh ${escapeHtml(info.artist)}`, 'success');
-          tiktokInput.value = '';
+          showLinkStatus(`✓ Berhasil menambahkan: "${escapeHtml(newTrack.title)}" oleh ${escapeHtml(newTrack.artist)}`, 'success');
+          showToast(`✓ Berhasil mengunduh dari ${platformName}!`, 'earphone-play');
+          linkInput.value = '';
         } catch (err) {
-          console.error('TikTok import error:', err);
-          showTikTokStatus('Gagal: ' + (err.message || 'Tidak dapat memproses link TikTok ini.'), 'error');
+          console.error("Link download error:", err);
+          showLinkStatus(`Gagal: ${err.message || 'Tidak dapat memproses link.'}`, 'error');
         } finally {
-          tiktokBtn.disabled = false;
+          linkSubmitBtn.disabled = false;
         }
       }
 
-      function showTikTokStatus(msg, type) {
-        tiktokStatus.innerHTML = msg;
-        tiktokStatus.className = 'tiktok-status ' + type;
-      }
-
-      tiktokBtn.addEventListener('click', () => {
-        const url = tiktokInput.value.trim();
-        addSongFromTikTok(url);
+      linkSubmitBtn.addEventListener('click', () => addSongFromLink(linkInput.value));
+      linkInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') addSongFromLink(linkInput.value);
       });
 
-      tiktokInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          const url = tiktokInput.value.trim();
-          addSongFromTikTok(url);
-        }
+      // Highlight matching platform chip on input typing
+      linkInput.addEventListener('input', () => {
+        const u = linkInput.value.toLowerCase();
+        document.querySelectorAll('.platform-pill').forEach(pill => {
+          const plat = pill.getAttribute('data-platform');
+          let match = false;
+          if (plat === 'yt' && (u.includes('youtube') || u.includes('youtu.be'))) match = true;
+          if (plat === 'tt' && u.includes('tiktok')) match = true;
+          if (plat === 'ig' && u.includes('instagram')) match = true;
+          if (plat === 'x' && (u.includes('twitter') || u.includes('x.com'))) match = true;
+          if (plat === 'sp' && u.includes('spotify')) match = true;
+          if (plat === 'sc' && u.includes('soundcloud')) match = true;
+          pill.classList.toggle('active', match || !u);
+        });
       });
 
+      // ---------- Track Management (Remove, Reorder, Edit) ----------
       function removeTrack(id) {
         const idx = tracks.findIndex(t => t.id === id);
         if (idx === -1) return;
         URL.revokeObjectURL(tracks[idx].url);
         tracks.splice(idx, 1);
 
-        // Hapus dari IndexedDB
-        deleteSong(id).catch(err => console.error("Gagal menghapus lagu dari DB:", err));
+        deleteSong(id).catch(err => console.error("Gagal menghapus:", err));
 
         if (idx === currentIndex) {
           pause();
@@ -1418,7 +2799,11 @@
             audio.removeAttribute('src');
             nowTitle.textContent = "Tidak ada lagu diputar";
             nowArtist.textContent = "Pilih lagu dari daftar";
+            islandTitle.textContent = "Wisnux Player";
+            expandedTitle.textContent = "Tidak ada lagu";
+            expandedArtist.textContent = "Pilih lagu dari daftar";
             seekBar.value = 0; seekBar.max = 0;
+            expandedSeekBar.value = 0; expandedSeekBar.max = 0;
             curTimeEl.textContent = "0:00"; durTimeEl.textContent = "0:00";
             updateMediaSessionMetadata(null);
           } else {
@@ -1428,57 +2813,17 @@
           currentIndex -= 1;
         }
 
-        if (shuffle) {
-          initShufflePool();
-        }
+        if (shuffle) initShufflePool();
         saveAllSongOrders();
         renderTracklist();
         updateControlsDisabled();
       }
 
-      // ---------- Smart Shuffle Logic ----------
-      function initShufflePool() {
-        shufflePool = [];
-        for (let i = 0; i < tracks.length; i++) {
-          if (i !== currentIndex) {
-            shufflePool.push(i);
-          }
-        }
-        // Fisher-Yates shuffle algorithm
-        for (let i = shufflePool.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shufflePool[i], shufflePool[j]] = [shufflePool[j], shufflePool[i]];
-        }
-      }
-
-      function pickNextIndex() {
-        if (tracks.length === 0) return -1;
-        if (tracks.length === 1) return 0;
-
-        if (shuffle) {
-          // Jika antrean acak habis atau indeks tidak cocok lagi, kocok ulang daftar lagu yang tersisa
-          if (shufflePool.length === 0 || shufflePool.some(idx => idx >= tracks.length)) {
-            initShufflePool();
-          }
-          if (shufflePool.length === 0) {
-            return (currentIndex + 1) % tracks.length;
-          }
-          const nextIdx = shufflePool.shift();
-          if (currentIndex !== -1) {
-            shuffleHistory.push(currentIndex);
-          }
-          return nextIdx;
-        }
-
-        return (currentIndex + 1) % tracks.length;
-      }
-
-      // ---------- Reordering Tracks ----------
       function moveTrack(fromIndex, toIndex) {
         if (fromIndex < 0 || fromIndex >= tracks.length || toIndex < 0 || toIndex >= tracks.length || fromIndex === toIndex) return;
 
-        const movedTrack = tracks.splice(fromIndex, 1)[0];
-        tracks.splice(toIndex, 0, movedTrack);
+        const moved = tracks.splice(fromIndex, 1)[0];
+        tracks.splice(toIndex, 0, moved);
 
         if (currentIndex === fromIndex) {
           currentIndex = toIndex;
@@ -1488,10 +2833,7 @@
           currentIndex += 1;
         }
 
-        if (shuffle) {
-          initShufflePool();
-        }
-
+        if (shuffle) initShufflePool();
         renderTracklist();
         saveAllSongOrders();
       }
@@ -1509,12 +2851,11 @@
             });
           }
         } catch (err) {
-          console.error("Gagal menyimpan urutan lagu ke DB:", err);
+          console.error("Gagal simpan urutan:", err);
         }
       }
 
       let dragSrcIndex = null;
-
       function handleDragStart(e) {
         dragSrcIndex = Number(this.getAttribute('data-index'));
         this.classList.add('dragging');
@@ -1551,10 +2892,12 @@
         document.querySelectorAll('ul.tracklist li').forEach(li => li.classList.remove('drag-over'));
       }
 
-      // ---------- render playlist ----------
+      // ---------- Render Tracklist ----------
       function renderTracklist() {
         emptyState.style.display = tracks.length === 0 ? 'block' : 'none';
+        playlistStats.textContent = `${tracks.length} lagu`;
         tracklistEl.innerHTML = '';
+
         tracks.forEach((t, i) => {
           const li = document.createElement('li');
           const active = i === currentIndex;
@@ -1563,23 +2906,22 @@
 
           if (isEditing) {
             li.innerHTML = `
-          <span class="idx mono">${active && isPlaying ? '▶' : String(i + 1).padStart(2, '0')}</span>
-          <div class="meta">
-            <div class="edit-fields">
-              <input type="text" class="title-input" value="${escapeHtml(t.title)}" placeholder="Judul lagu" />
-              <input type="text" class="artist-input" value="${escapeHtml(t.artist)}" placeholder="Nama artis" />
-            </div>
-          </div>
-          <button class="save-btn" aria-label="Simpan">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          </button>
-          <button class="remove-btn" aria-label="Batal">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        `;
+              <span class="idx mono">${active && isPlaying ? '▶' : String(i + 1).padStart(2, '0')}</span>
+              <div class="meta">
+                <div class="edit-fields">
+                  <input type="text" class="title-input" value="${escapeHtml(t.title)}" placeholder="Judul lagu" />
+                  <input type="text" class="artist-input" value="${escapeHtml(t.artist)}" placeholder="Nama artis" />
+                </div>
+              </div>
+              <button class="save-btn" aria-label="Simpan">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button class="remove-btn" aria-label="Batal">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            `;
             const titleInput = li.querySelector('.title-input');
             const artistInput = li.querySelector('.artist-input');
-
             const doSave = () => saveEdit(t.id, titleInput.value, artistInput.value);
             const doCancel = () => { editingId = null; renderTracklist(); };
 
@@ -1599,41 +2941,31 @@
           }
 
           li.innerHTML = `
-        <div class="reorder-btns">
-          <button class="move-btn move-up-btn" title="Pindah ke atas" ${i === 0 ? 'disabled' : ''}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-          </button>
-          <button class="move-btn move-down-btn" title="Pindah ke bawah" ${i === tracks.length - 1 ? 'disabled' : ''}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-        </div>
-        <span class="idx mono">${active && isPlaying ? '▶' : String(i + 1).padStart(2, '0')}</span>
-        <div class="meta">
-          <div class="title">${escapeHtml(t.title)}</div>
-          <div class="artist">${escapeHtml(t.artist)}</div>
-        </div>
-        <button class="edit-btn" aria-label="Ganti nama lagu" title="Ganti nama">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-        </button>
-        <button class="remove-btn" aria-label="Hapus lagu">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      `;
+            <div class="reorder-btns">
+              <button class="move-btn move-up-btn" title="Pindah ke atas" ${i === 0 ? 'disabled' : ''}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+              </button>
+              <button class="move-btn move-down-btn" title="Pindah ke bawah" ${i === tracks.length - 1 ? 'disabled' : ''}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+            </div>
+            <span class="idx mono">${active && isPlaying ? '▶' : String(i + 1).padStart(2, '0')}</span>
+            <div class="meta">
+              <div class="title">${escapeHtml(t.title)}</div>
+              <div class="artist">${escapeHtml(t.artist)}</div>
+            </div>
+            <button class="edit-btn" aria-label="Ganti nama" title="Ganti nama">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            </button>
+            <button class="remove-btn" aria-label="Hapus lagu" title="Hapus lagu">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          `;
 
-          const moveUpBtn = li.querySelector('.move-up-btn');
-          const moveDownBtn = li.querySelector('.move-down-btn');
-          if (moveUpBtn) {
-            moveUpBtn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              moveTrack(i, i - 1);
-            });
-          }
-          if (moveDownBtn) {
-            moveDownBtn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              moveTrack(i, i + 1);
-            });
-          }
+          const moveUp = li.querySelector('.move-up-btn');
+          const moveDown = li.querySelector('.move-down-btn');
+          if (moveUp) moveUp.addEventListener('click', (e) => { e.stopPropagation(); moveTrack(i, i - 1); });
+          if (moveDown) moveDown.addEventListener('click', (e) => { e.stopPropagation(); moveTrack(i, i + 1); });
 
           li.setAttribute('draggable', 'true');
           li.setAttribute('data-index', i);
@@ -1648,15 +2980,18 @@
             loadTrack(i);
             play();
           });
+
           li.querySelector('.remove-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             removeTrack(t.id);
           });
+
           li.querySelector('.edit-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             editingId = t.id;
             renderTracklist();
           });
+
           tracklistEl.appendChild(li);
         });
       }
@@ -1664,43 +2999,56 @@
       function saveEdit(id, newTitle, newArtist) {
         const t = tracks.find(tr => tr.id === id);
         if (!t) return;
-        const title = newTitle.trim();
-        const artist = newArtist.trim();
-        t.title = title || t.title;
-        t.artist = artist || "Tidak diketahui";
+        t.title = newTitle.trim() || t.title;
+        t.artist = newArtist.trim() || "Tidak diketahui";
         editingId = null;
         renderTracklist();
         if (tracks[currentIndex] && tracks[currentIndex].id === id) {
           nowTitle.textContent = t.title;
           nowArtist.textContent = t.artist;
+          islandTitle.textContent = t.title;
+          expandedTitle.textContent = t.title;
+          expandedArtist.textContent = t.artist;
         }
-        // Perbarui di IndexedDB
         saveSong({
           id: t.id,
           file: t.file,
           title: t.title,
           artist: t.artist,
           order: tracks.indexOf(t)
-        }).catch(err => console.error("Gagal memperbarui info lagu di DB:", err));
+        }).catch(err => console.error("Gagal simpan edit:", err));
       }
 
-      // ---------- Background Audio & MediaSession API ----------
-      let audioCtx = null;
-
-      function ensureAudioContextActive() {
-        try {
-          if (!audioCtx) {
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            if (AudioCtx) {
-              audioCtx = new AudioCtx();
-            }
-          }
-          if (audioCtx && audioCtx.state === 'suspended') {
-            audioCtx.resume();
-          }
-        } catch (_) {}
+      // ---------- Smart Shuffle Logic ----------
+      function initShufflePool() {
+        shufflePool = [];
+        for (let i = 0; i < tracks.length; i++) {
+          if (i !== currentIndex) shufflePool.push(i);
+        }
+        for (let i = shufflePool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shufflePool[i], shufflePool[j]] = [shufflePool[j], shufflePool[i]];
+        }
       }
 
+      function pickNextIndex() {
+        if (tracks.length === 0) return -1;
+        if (tracks.length === 1) return 0;
+
+        if (shuffle) {
+          if (shufflePool.length === 0 || shufflePool.some(idx => idx >= tracks.length)) {
+            initShufflePool();
+          }
+          if (shufflePool.length === 0) return (currentIndex + 1) % tracks.length;
+          const nextIdx = shufflePool.shift();
+          if (currentIndex !== -1) shuffleHistory.push(currentIndex);
+          return nextIdx;
+        }
+
+        return (currentIndex + 1) % tracks.length;
+      }
+
+      // ---------- MediaSession API: Lock Screen & Dynamic Controls ----------
       function updateMediaSessionMetadata(t) {
         if (!('mediaSession' in navigator)) return;
         if (!t || tracks.length === 0 || currentIndex === -1) {
@@ -1713,7 +3061,7 @@
           navigator.mediaSession.metadata = new MediaMetadata({
             title: t.title || 'Lagu Lokal',
             artist: t.artist || 'Tidak diketahui',
-            album: 'wisnux Pemutar Musik',
+            album: 'wisnux song • Dynamic Island',
             artwork: [
               { src: origin + '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
               { src: origin + '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -1721,7 +3069,7 @@
             ]
           });
         } catch (e) {
-          console.warn("MediaSession metadata warning:", e);
+          console.warn("MediaSession warning:", e);
         }
       }
 
@@ -1732,7 +3080,7 @@
               navigator.mediaSession.setPositionState({
                 duration: audio.duration,
                 playbackRate: audio.playbackRate || 1.0,
-                position: audio.currentTime
+                position: Math.min(audio.currentTime, audio.duration)
               });
             } catch (_) {}
           }
@@ -1754,30 +3102,29 @@
             }
           });
           navigator.mediaSession.setActionHandler('seekbackward', (details) => {
-            const skipTime = details.seekOffset || 10;
-            audio.currentTime = Math.max(audio.currentTime - skipTime, 0);
+            const skip = details.seekOffset || 10;
+            audio.currentTime = Math.max(audio.currentTime - skip, 0);
             updatePositionState();
           });
           navigator.mediaSession.setActionHandler('seekforward', (details) => {
-            const skipTime = details.seekOffset || 10;
-            audio.currentTime = Math.min(audio.currentTime + skipTime, audio.duration || 0);
+            const skip = details.seekOffset || 10;
+            audio.currentTime = Math.min(audio.currentTime + skip, audio.duration || 0);
             updatePositionState();
           });
         } catch (e) {
-          console.warn("MediaSession action handler error:", e);
+          console.warn("MediaSession action handler warning:", e);
         }
       }
 
       initMediaSessionHandlers();
 
-      // ---------- playback ----------
+      // ---------- Playback Controls ----------
       function loadTrack(idx) {
         if (idx < 0 || idx >= tracks.length) return;
         currentIndex = idx;
         const t = tracks[idx];
 
-        // Gunakan rute /media-stream berbasis Service Worker HTTP 206 Partial Content
-        // Ini mencegah browser HP (Android Chrome) menghentikan lagu saat layar dimatikan (Blob URL suspension)
+        // Service Worker HTTP 206 Partial Content route
         const streamUrl = `/media-stream?id=${encodeURIComponent(t.id)}&t=${Date.now()}`;
         if (navigator.serviceWorker && navigator.serviceWorker.controller) {
           audio.src = streamUrl;
@@ -1788,47 +3135,39 @@
         audio.load();
         nowTitle.textContent = t.title;
         nowArtist.textContent = t.artist;
-        updateMediaSessionMetadata(t);
+        islandTitle.textContent = t.title;
+        expandedTitle.textContent = t.title;
+        expandedArtist.textContent = t.artist;
 
-        // Hanya perbarui DOM berat jika aplikasi terlihat (layar menyala) untuk cegah throttling latar belakang di Android
-        if (!document.hidden) {
-          renderTracklist();
-        }
+        updateMediaSessionMetadata(t);
+        if (!document.hidden) renderTracklist();
         updateControlsDisabled();
       }
 
       function play() {
-        ensureAudioContextActive();
-        if (currentIndex === -1 && tracks.length > 0) {
-          loadTrack(0);
-        }
+        setupWebAudioSystem();
+        inspectAudioOutputDevices();
+
+        if (currentIndex === -1 && tracks.length > 0) loadTrack(0);
         if (currentIndex === -1) return;
 
         isPlaying = true;
         if ('mediaSession' in navigator && tracks[currentIndex]) {
           navigator.mediaSession.playbackState = 'playing';
         }
-
-        if (!document.hidden) {
-          updatePlayUI();
-        }
+        if (!document.hidden) updatePlayUI();
 
         const p = audio.play();
         if (p !== undefined) {
           p.then(() => {
             isPlaying = true;
-            if ('mediaSession' in navigator) {
-              navigator.mediaSession.playbackState = 'playing';
-            }
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+            updatePlayUI();
           }).catch((err) => {
-            console.warn("Audio play error:", err);
+            console.warn("Play interrupted / autoplay blocked:", err);
             isPlaying = false;
-            if ('mediaSession' in navigator) {
-              navigator.mediaSession.playbackState = 'paused';
-            }
-            if (!document.hidden) {
-              updatePlayUI();
-            }
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+            updatePlayUI();
           });
         }
       }
@@ -1836,12 +3175,8 @@
       function pause() {
         audio.pause();
         isPlaying = false;
-        if ('mediaSession' in navigator) {
-          navigator.mediaSession.playbackState = 'paused';
-        }
-        if (!document.hidden) {
-          updatePlayUI();
-        }
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+        if (!document.hidden) updatePlayUI();
       }
 
       function togglePlay() {
@@ -1849,27 +3184,26 @@
       }
 
       function updatePlayUI() {
+        // Player bar icon
         playIcon.innerHTML = isPlaying
           ? '<rect x="5" y="4" width="4" height="16" rx="1"></rect><rect x="15" y="4" width="4" height="16" rx="1"></rect>'
           : '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
         playIcon.style.marginLeft = isPlaying ? '0' : '2px';
-        updateVu(isPlaying);
 
-        if (!document.hidden) {
-          renderTracklist();
-        }
+        // Dynamic Island icons
+        islandMiniPlayIcon.innerHTML = isPlaying
+          ? '<rect x="5" y="4" width="4" height="16" rx="1"></rect><rect x="15" y="4" width="4" height="16" rx="1"></rect>'
+          : '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+        islandPlayIcon.innerHTML = islandMiniPlayIcon.innerHTML;
+
+        updateVu(isPlaying);
+        if (!document.hidden) renderTracklist();
 
         if ('mediaSession' in navigator) {
-          if (tracks.length === 0 || currentIndex === -1) {
-            navigator.mediaSession.metadata = null;
-            navigator.mediaSession.playbackState = 'none';
-          } else {
-            navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
-          }
+          navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
         }
       }
 
-      // Re-render UI secara lancar saat layar HP dinyalakan kembali
       document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
           renderTracklist();
@@ -1882,6 +3216,10 @@
         playBtn.disabled = !has;
         prevBtn.disabled = !has;
         nextBtn.disabled = !has;
+        islandMiniPlay.disabled = !has;
+        islandPlayBtn.disabled = !has;
+        islandPrevBtn.disabled = !has;
+        islandNextBtn.disabled = !has;
       }
 
       function playNext() {
@@ -1931,26 +3269,29 @@
           const t = tracks[currentIndex];
           if (!audio.src.includes('blob:') && t.url) {
             audio.src = t.url;
-            if (isPlaying) {
-              audio.play().catch(() => playNext());
-              return;
-            }
+            if (isPlaying) audio.play().catch(() => playNext());
+            return;
           }
         }
-        if (isPlaying) {
-          playNext();
-        }
+        if (isPlaying) playNext();
       });
 
       audio.addEventListener('timeupdate', () => {
         seekBar.value = audio.currentTime;
-        curTimeEl.textContent = fmtTime(audio.currentTime);
+        expandedSeekBar.value = audio.currentTime;
+        const cur = fmtTime(audio.currentTime);
+        curTimeEl.textContent = cur;
+        expandedCurTime.textContent = cur;
         updatePositionState();
       });
 
       audio.addEventListener('loadedmetadata', () => {
-        seekBar.max = audio.duration || 0;
-        durTimeEl.textContent = fmtTime(audio.duration);
+        const dur = audio.duration || 0;
+        seekBar.max = dur;
+        expandedSeekBar.max = dur;
+        const dStr = fmtTime(dur);
+        durTimeEl.textContent = dStr;
+        expandedDurTime.textContent = dStr;
         updatePositionState();
       });
 
@@ -1959,7 +3300,7 @@
         updatePositionState();
       });
 
-      // ---------- buttons ----------
+      // ---------- Buttons ----------
       playBtn.addEventListener('click', togglePlay);
       nextBtn.addEventListener('click', playNext);
       prevBtn.addEventListener('click', playPrev);
@@ -1971,9 +3312,11 @@
         if (shuffle) {
           initShufflePool();
           shuffleHistory = currentIndex !== -1 ? [currentIndex] : [];
+          showToast('🔀 Smart Shuffle aktif');
         } else {
           shufflePool = [];
           shuffleHistory = [];
+          showToast('Urutan normal');
         }
       });
 
@@ -1982,14 +3325,17 @@
         all: '<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path>',
         one: '<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path><text x="12" y="16" font-size="8" fill="currentColor" stroke="none" text-anchor="middle">1</text>'
       };
+
       repeatBtn.addEventListener('click', () => {
         repeatMode = repeatMode === 'off' ? 'all' : repeatMode === 'all' ? 'one' : 'off';
         repeatIcon.innerHTML = repeatIcons[repeatMode];
         repeatBtn.classList.toggle('active-c', repeatMode !== 'off');
         repeatBtn.classList.toggle('muted-c', repeatMode === 'off');
+        const msgs = { off: 'Ulangi: Mati', all: '🔁 Ulangi Semua Lagu', one: '🔂 Ulangi 1 Lagu Ini' };
+        showToast(msgs[repeatMode]);
       });
 
-      // ---------- volume ----------
+      // ---------- Volume Slider & Mute ----------
       volumeBar.addEventListener('input', () => {
         audio.volume = Number(volumeBar.value);
         muted = audio.volume === 0;
@@ -1999,7 +3345,7 @@
 
       muteBtn.addEventListener('click', () => {
         muted = !muted;
-        audio.volume = muted ? 0 : (lastVolume || 0.8);
+        audio.volume = muted ? 0 : (lastVolume || 0.75);
         volumeBar.value = audio.volume;
         updateVolIcon();
       });
@@ -2010,9 +3356,9 @@
           : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>';
       }
 
-      audio.volume = 0.8;
+      audio.volume = 0.75;
 
-      // ---------- keyboard shortcut: space to play/pause ----------
+      // Keyboard Shortcut: Space
       document.addEventListener('keydown', (e) => {
         if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
           e.preventDefault();
@@ -2020,18 +3366,18 @@
         }
       });
 
-      // ---------- cleanup ----------
+      // Cleanup
       window.addEventListener('beforeunload', () => {
         tracks.forEach(t => URL.revokeObjectURL(t.url));
       });
 
-      // ---------- initialization ----------
+      // ---------- Init Application ----------
       async function initApp() {
         try {
-          const savedSongs = await getAllSongs();
-          if (savedSongs && savedSongs.length > 0) {
-            savedSongs.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-            savedSongs.forEach(s => {
+          const saved = await getAllSongs();
+          if (saved && saved.length > 0) {
+            saved.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+            saved.forEach(s => {
               tracks.push({
                 id: s.id,
                 file: s.file,
@@ -2044,14 +3390,15 @@
             loadTrack(0);
           }
         } catch (err) {
-          console.error("Gagal memuat lagu dari basis data:", err);
+          console.error("Gagal inisialisasi basis data:", err);
         }
         updateControlsDisabled();
+        inspectAudioOutputDevices();
       }
 
       initApp();
 
-      // ---------- service worker (offline support & auto-update for APK) ----------
+      // ---------- Service Worker & Offline ----------
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js').then((reg) => {
@@ -2078,7 +3425,6 @@
         });
       }
 
-      // ---------- offline indicator ----------
       const offlinePill = document.getElementById('offlinePill');
       function updateOnlineStatus() {
         offlinePill.classList.toggle('show', !navigator.onLine);
@@ -2087,7 +3433,7 @@
       window.addEventListener('offline', updateOnlineStatus);
       updateOnlineStatus();
 
-      // ---------- install prompt (Android/Chrome) ----------
+      // ---------- Install Prompt (PWA / APK) ----------
       const installBtn = document.getElementById('installBtn');
       let deferredPrompt = null;
 

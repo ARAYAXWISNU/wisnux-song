@@ -30,12 +30,17 @@ http.createServer(async (req, res) => {
     req.query[key] = value;
   }
 
-  // Handle API route - import as ESM with cache-busting
-  if (pathname === '/api/tiktok') {
+  // Handle API routes - import as ESM with cache-busting
+  if (pathname.startsWith('/api/')) {
     try {
-      const tiktokFilePath = path.join(__dirname, 'api', 'tiktok.js');
-      const tiktokPath = pathToFileURL(tiktokFilePath).href + `?t=${Date.now()}`;
-      const { default: handler } = await import(tiktokPath);
+      const routeName = pathname.replace('/api/', '').split('?')[0] || 'download';
+      const apiFile = `${routeName}.js`;
+      let targetPath = path.join(__dirname, 'api', apiFile);
+      if (!fs.existsSync(targetPath)) {
+        targetPath = path.join(__dirname, 'api', 'download.js');
+      }
+      const apiModuleUrl = pathToFileURL(targetPath).href + `?t=${Date.now()}`;
+      const { default: handler } = await import(apiModuleUrl);
       await handler(req, res);
     } catch (err) {
       console.error('API Error:', err);
