@@ -5,7 +5,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>wisnux song - Pemutar Musik Pintar</title>
-  <meta name="description" content="Pemutar musik lokal dan multi-sumber (YouTube, TikTok, IG, X) dengan proteksi audio pintar dan normalisasi volume HP." />
+  <meta name="description"
+    content="Pemutar musik lokal dan multi-sumber (YouTube, TikTok, IG, X) dengan proteksi audio pintar dan normalisasi volume HP." />
 
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json" />
@@ -36,44 +37,47 @@
       --panel-elevated: #322D27;
       --line: #3A332B;
       --line-subtle: rgba(225, 215, 200, 0.08);
-      
+
       /* Claude's signature terracotta / warm clay accent */
       --accent: #D97757;
       --accent-hover: #E28769;
       --accent-active: #C46445;
       --accent-subtle: rgba(217, 119, 87, 0.14);
       --accent-glow: rgba(217, 119, 87, 0.28);
-      
+
       --text: #F5EFE6;
       --text-secondary: #B0A79B;
       --muted: #7E756B;
       --danger: #E06C53;
       --success: #5EB884;
       --warning: #E8A33D;
-      
+
       --font-serif: 'Newsreader', Georgia, serif;
       --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
-      
+
       --radius-sm: 8px;
       --radius-md: 12px;
       --radius-lg: 16px;
       --radius-xl: 20px;
       --radius-full: 9999px;
-      
+
       --shadow-claude: 0 4px 20px -2px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(225, 215, 200, 0.06);
       --shadow-card: 0 6px 24px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--line);
       --shadow-floating: 0 12px 40px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(217, 119, 87, 0.3);
     }
 
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
       text-decoration: none;
     }
 
-    html, body {
+    html,
+    body {
       min-height: 100vh;
       background: radial-gradient(circle at 50% 0%, #29241E 0%, #171513 65%), #171513;
       color: var(--text);
@@ -151,7 +155,7 @@
       gap: 0.75rem;
     }
 
-    .setting-row + .setting-row {
+    .setting-row+.setting-row {
       border-top: 1px solid var(--line-subtle);
     }
 
@@ -241,7 +245,7 @@
       background: var(--panel);
       flex-shrink: 0;
       color: var(--accent);
-      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
       position: relative;
     }
 
@@ -260,7 +264,9 @@
     }
 
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .brand-heading-row {
@@ -351,8 +357,13 @@
     }
 
     @keyframes vu-pulse {
-      from { transform: scaleY(0.3); }
-      to { transform: scaleY(1); }
+      from {
+        transform: scaleY(0.3);
+      }
+
+      to {
+        transform: scaleY(1);
+      }
     }
 
     /* Install & PiP Header buttons */
@@ -866,7 +877,9 @@
     }
 
     /* Touch screen fallback */
-    @media (hover: none), (max-width: 1024px) {
+    @media (hover: none),
+    (max-width: 1024px) {
+
       ul.tracklist li .remove-btn,
       ul.tracklist li .edit-btn,
       ul.tracklist li .reorder-btns {
@@ -909,8 +922,13 @@
       flex-shrink: 0;
     }
 
-    .time.right { text-align: left; }
-    .time.left { text-align: right; }
+    .time.right {
+      text-align: left;
+    }
+
+    .time.left {
+      text-align: right;
+    }
 
     input[type=range] {
       -webkit-appearance: none;
@@ -989,6 +1007,53 @@
 
 
 
+    .mini-disc.spin svg {
+      animation: spin 4s linear infinite;
+    }
+
+    .player-badges-row {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.35rem;
+      flex-wrap: wrap;
+    }
+
+    .route-badge-btn,
+    .norm-badge-btn {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--text-secondary);
+      border-radius: var(--radius-full);
+      padding: 0.2rem 0.55rem;
+      font-size: 0.68rem;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .route-badge-btn:hover,
+    .norm-badge-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .route-badge-btn.earphone {
+      border-color: rgba(94, 184, 132, 0.4);
+      color: #72D29E;
+      background: rgba(94, 184, 132, 0.1);
+    }
+
+    .norm-badge-btn.active {
+      border-color: rgba(217, 119, 87, 0.45);
+      color: var(--accent);
+      background: var(--accent-subtle);
+    }
+
     .btns {
       display: flex;
       align-items: center;
@@ -1049,46 +1114,348 @@
       flex: none;
     }
 
-    @media(min-width: 640px) {
-      .volume-row { display: flex; }
+    @media(min-width: 769px) {
+      .volume-row {
+        display: flex;
+      }
     }
 
-    /* Mobile Responsive Controls */
-    @media(max-width: 640px) {
+    /* ==========================================================================
+       DEDICATED MOBILE / HP DESIGN (max-width: 768px)
+       ========================================================================== */
+    @media(max-width: 768px) {
       .wrap {
-        padding-bottom: 13rem;
+        padding: 1.25rem 0.9rem calc(11.5rem + env(safe-area-inset-bottom, 0px));
       }
 
+      /* Mobile Header */
+      header.claude-header {
+        padding: 0.75rem 0.3rem 1.1rem;
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .brand-wrap {
+        gap: 0.65rem;
+        min-width: 0;
+      }
+
+      .claude-disc {
+        width: 38px;
+        height: 38px;
+        flex-shrink: 0;
+      }
+
+      .brand-heading-row h1 {
+        font-size: 1.25rem;
+      }
+
+      .brand-tagline {
+        display: none;
+        /* Disembunyikan di HP agar hemat ruang vertikal */
+      }
+
+      .header-actions {
+        gap: 0.45rem;
+        flex-shrink: 0;
+      }
+
+      .vu {
+        width: 32px;
+        height: 16px;
+      }
+
+      .settings-gear-btn {
+        padding: 0.45rem 0.65rem;
+        font-size: 0.76rem;
+      }
+
+      /* Mobile Multi-Source Downloader Card */
+      .claude-card.downloader-card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: var(--radius-lg);
+      }
+
+      .downloader-header {
+        gap: 0.75rem;
+      }
+
+      .downloader-title-group h2 {
+        font-size: 0.96rem;
+      }
+
+      .downloader-title-group p {
+        font-size: 0.73rem;
+        line-height: 1.35;
+      }
+
+      .platform-pills {
+        display: flex;
+        overflow-x: auto;
+        white-space: nowrap;
+        gap: 0.4rem;
+        padding-bottom: 0.4rem;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .platform-pills::-webkit-scrollbar {
+        display: none;
+      }
+
+      .platform-pill {
+        flex-shrink: 0;
+        padding: 0.25rem 0.65rem;
+        font-size: 0.72rem;
+      }
+
+      .link-input-row {
+        flex-direction: column;
+        gap: 0.55rem;
+      }
+
+      .link-input-wrapper {
+        width: 100%;
+      }
+
+      .claude-input {
+        font-size: 0.82rem;
+        padding: 0.7rem 0.75rem 0.7rem 2.2rem;
+      }
+
+      .claude-btn-primary {
+        width: 100%;
+        justify-content: center;
+        padding: 0.7rem;
+        font-size: 0.84rem;
+      }
+
+      /* Mobile Dropzone */
+      .dropzone {
+        padding: 1.15rem 0.85rem;
+        margin-bottom: 1.2rem;
+        gap: 0.75rem;
+        border-radius: var(--radius-lg);
+      }
+
+      .dropzone strong {
+        font-size: 0.84rem;
+      }
+
+      .dropzone small {
+        font-size: 0.72rem;
+        line-height: 1.35;
+      }
+
+      /* Mobile Playlist & Track Items */
+      .playlist-header-row {
+        margin-bottom: 0.65rem;
+      }
+
+      ul.tracklist li {
+        padding: 0.75rem 0.85rem;
+        gap: 0.65rem;
+        border-radius: var(--radius-md);
+        min-height: 54px;
+      }
+
+      ul.tracklist li .meta .title {
+        font-size: 0.85rem;
+      }
+
+      ul.tracklist li .meta .artist {
+        font-size: 0.72rem;
+      }
+
+      ul.tracklist li .reorder-btns {
+        opacity: 1;
+        display: flex;
+        gap: 2px;
+      }
+
+      ul.tracklist li .move-btn {
+        padding: 3px;
+        min-height: 20px;
+      }
+
+      ul.tracklist li .remove-btn,
+      ul.tracklist li .edit-btn {
+        opacity: 0.95;
+        padding: 0.45rem;
+      }
+
+      /* Dedicated Mobile Bottom Player Dock */
+      .player-bar {
+        padding: 0.55rem 0.85rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+        background: rgba(22, 19, 17, 0.97);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border-top: 1px solid var(--line);
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.65);
+      }
+
+      .player-inner {
+        padding: 0;
+        max-width: 100%;
+      }
+
+      .progress-row {
+        gap: 0.45rem;
+        margin-bottom: 0.45rem;
+      }
+
+      .time {
+        font-size: 0.65rem;
+        width: 30px;
+      }
+
+      /* Grid 2-baris yang rapi dan ergonomis untuk layar HP */
       .controls-row {
         display: grid;
-        grid-template-areas:
-          "info volume"
-          "btns btns";
         grid-template-columns: 1fr auto;
-        gap: 0.5rem;
+        grid-template-rows: auto auto;
+        gap: 0.45rem 0.6rem;
         align-items: center;
       }
 
       .track-info {
-        grid-area: info;
+        grid-column: 1;
+        grid-row: 1;
         min-width: 0;
-      }
-
-      .volume-row {
-        grid-area: volume;
-        display: flex !important;
-        justify-content: flex-end;
-      }
-
-      .btns {
-        grid-area: btns;
-        width: 100%;
-        justify-content: center;
+        display: flex;
+        align-items: center;
         gap: 0.6rem;
       }
 
+      .mini-disc {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-sm);
+        flex-shrink: 0;
+      }
+
+      .track-info .txt {
+        min-width: 0;
+      }
+
+      .track-info .txt .title {
+        font-size: 0.84rem;
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .track-info .txt .artist {
+        font-size: 0.7rem;
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .btns {
+        grid-column: 2;
+        grid-row: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.2rem;
+        justify-content: flex-end;
+      }
+
       .btn {
-        padding: 0.65rem;
+        padding: 0.45rem;
+      }
+
+      .play-btn {
+        width: 42px;
+        height: 42px;
+        flex-shrink: 0;
+      }
+
+      .player-badges-row {
+        grid-column: 1;
+        grid-row: 2;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-top: 0;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .player-badges-row::-webkit-scrollbar {
+        display: none;
+      }
+
+      .route-badge-btn,
+      .norm-badge-btn {
+        padding: 0.18rem 0.45rem;
+        font-size: 0.65rem;
+        flex-shrink: 0;
+      }
+
+      .volume-row {
+        grid-column: 2;
+        grid-row: 2;
+        display: flex !important;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.35rem;
+        flex: none;
+      }
+
+      .volume-row input[type=range] {
+        width: 65px;
+      }
+
+      /* Modals as Native Mobile Bottom Sheets */
+      .modal-backdrop,
+      .settings-backdrop {
+        align-items: flex-end;
+        padding: 0;
+      }
+
+      .claude-modal,
+      .settings-modal {
+        max-width: 100%;
+        width: 100%;
+        border-radius: 20px 20px 0 0;
+        border-bottom: none;
+        max-height: 85vh;
+        animation: sheet-slide-up 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      @keyframes sheet-slide-up {
+        from {
+          transform: translateY(100%);
+        }
+
+        to {
+          transform: translateY(0);
+        }
+      }
+    }
+
+    @media (max-width: 420px) {
+      .track-info .txt .title {
+        max-width: 130px;
+      }
+
+      .track-info .txt .artist {
+        max-width: 130px;
+      }
+
+      .volume-row input[type=range] {
+        width: 55px;
+      }
+
+      .btns {
+        gap: 0.1rem;
       }
     }
 
@@ -1122,8 +1489,15 @@
     }
 
     @keyframes modal-pop {
-      from { transform: scale(0.92); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
+      from {
+        transform: scale(0.92);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
     }
 
     .modal-header {
@@ -1189,9 +1563,20 @@
     }
 
     @keyframes pulse-ring {
-      0% { transform: scale(0.9); opacity: 0.8; }
-      50% { transform: scale(1.3); opacity: 1; }
-      100% { transform: scale(0.9); opacity: 0.8; }
+      0% {
+        transform: scale(0.9);
+        opacity: 0.8;
+      }
+
+      50% {
+        transform: scale(1.3);
+        opacity: 1;
+      }
+
+      100% {
+        transform: scale(0.9);
+        opacity: 0.8;
+      }
     }
 
     .device-info-text strong {
@@ -1286,7 +1671,7 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
       animation: toast-in 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
       transition: opacity 0.25s, transform 0.25s;
     }
@@ -1302,8 +1687,15 @@
     }
 
     @keyframes toast-in {
-      from { transform: translateY(-16px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
+      from {
+        transform: translateY(-16px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
     }
 
     .offline-pill {
@@ -1369,7 +1761,8 @@
         <button id="settingsHeaderBtn" class="settings-gear-btn" title="Pengaturan">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
           </svg>
           <span>Setting</span>
         </button>
@@ -1381,7 +1774,8 @@
       <div class="downloader-header">
         <div class="downloader-title-group">
           <div class="downloader-icon-box">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
             </svg>
@@ -1410,7 +1804,8 @@
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
           </span>
-          <input type="url" id="linkInput" class="claude-input" placeholder="Tempel tautan video/audio (YouTube, TikTok, Instagram Reel, X/Twitter, dll)..." />
+          <input type="url" id="linkInput" class="claude-input"
+            placeholder="Tempel tautan video/audio (YouTube, TikTok, Instagram Reel, X/Twitter, dll)..." />
         </div>
         <button id="linkSubmitBtn" class="claude-btn-primary">
           <span>Tambah</span>
@@ -1437,7 +1832,8 @@
       </div>
       <div>
         <strong>Pilih Berkas Lagu atau Video dari HP / Laptop</strong>
-        <small>Mendukung MP3, WAV, FLAC, M4A, OGG, MP4, MKV, WEBM. Diproses lokal dan disimpan aman di IndexedDB.</small>
+        <small>Mendukung MP3, WAV, FLAC, M4A, OGG, MP4, MKV, WEBM. Diproses lokal dan disimpan aman di
+          IndexedDB.</small>
       </div>
     </div>
 
@@ -1481,15 +1877,23 @@
             <div class="title" id="nowTitle">Tidak ada lagu diputar</div>
             <div class="artist" id="nowArtist">Pilih lagu dari daftar</div>
             <div class="player-badges-row">
-              <button class="route-badge-btn" id="playerRouteBadge" title="Klik untuk melihat/mengatur rute audio output">
+              <button class="route-badge-btn" id="playerRouteBadge"
+                title="Klik untuk melihat/mengatur rute audio output">
                 <span id="routeIcon">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                    <path
+                      d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+                  </svg>
                 </span>
                 <span id="routeLabel">Earphone</span>
               </button>
-              <button class="norm-badge-btn active" id="playerNormBadge" title="Klik untuk mengatur normalisasi volume HP">
+              <button class="norm-badge-btn active" id="playerNormBadge"
+                title="Klik untuk mengatur normalisasi volume HP">
                 <span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 7v10M18 7v10M3 10v4M21 10v4M9 5v14M15 5v14"/></svg>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 3v18M6 7v10M18 7v10M3 10v4M21 10v4M9 5v14M15 5v14" />
+                  </svg>
                 </span>
                 <span id="normLabel">Volume HP: Adaptif</span>
               </button>
@@ -1557,7 +1961,8 @@
         <div class="modal-title-group">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
-            <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+            <path
+              d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
           </svg>
           <h3>Status & Rute Audio Output</h3>
         </div>
@@ -1573,13 +1978,19 @@
         </div>
 
         <div>
-          <label style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:0.4rem;">
+          <label
+            style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:0.4rem;">
             Daftar Perangkat yang Terdeteksi:
           </label>
           <div class="device-list" id="deviceListEl">
             <div class="device-item active">
               <span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  style="vertical-align:middle;">
+                  <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                  <path
+                    d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+                </svg>
                 Earphone / Default Audio Out
               </span>
               <small style="color:var(--accent);">Aktif</small>
@@ -1589,11 +2000,14 @@
 
         <div class="info-callout">
           <span style="font-size:1.1rem;flex-shrink:0;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
           </span>
           <div>
             <strong>Fitur Proteksi Earphone Aktif:</strong>
-            Saat earphone/headphone terputus, lagu langsung dijeda otomatis agar tidak berisik di tempat umum. Saat dicolok/dihubungkan lagi, lagu akan langsung otomatis melanjutkan pemutaran.
+            Saat earphone/headphone terputus, lagu langsung dijeda otomatis agar tidak berisik di tempat umum. Saat
+            dicolok/dihubungkan lagi, lagu akan langsung otomatis melanjutkan pemutaran.
           </div>
         </div>
       </div>
@@ -1607,7 +2021,8 @@
         <div style="display:flex;align-items:center;gap:0.6rem;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
           </svg>
           <h3 style="font-size:0.95rem;font-weight:600;color:var(--text);">Pengaturan</h3>
         </div>
@@ -1622,7 +2037,11 @@
             <small>Pasang sebagai aplikasi di HP atau laptop agar bisa dibuka tanpa browser</small>
           </div>
           <button class="setting-action-btn" id="settingsInstallBtn">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
             <span>Instal</span>
           </button>
         </div>
@@ -1632,7 +2051,10 @@
             <small>Menampilkan notifikasi saat lagu berganti atau earphone terputus</small>
           </div>
           <button class="setting-action-btn" id="settingsNotifBtn">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
             <span id="notifBtnLabel">Izinkan</span>
           </button>
         </div>
@@ -1646,7 +2068,11 @@
             <small>Diperlukan untuk mendeteksi earphone/headphone dan mengalihkan rute audio</small>
           </div>
           <button class="setting-action-btn" id="settingsAudioPermBtn">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+              <path
+                d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+            </svg>
             <span id="audioPermBtnLabel">Izinkan</span>
           </button>
         </div>
@@ -1656,7 +2082,9 @@
             <small id="settingsNormDesc">Mode Adaptif: volume lagu disesuaikan agar stabil</small>
           </div>
           <button class="setting-action-btn" id="settingsNormBtn">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 7v10M18 7v10M3 10v4M21 10v4M9 5v14M15 5v14"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 3v18M6 7v10M18 7v10M3 10v4M21 10v4M9 5v14M15 5v14" />
+            </svg>
             <span id="settingsNormLabel">Adaptif</span>
           </button>
         </div>
@@ -1667,7 +2095,8 @@
         <div class="setting-row">
           <div class="setting-info">
             <strong>wisnux song v2</strong>
-            <small>Pemutar musik offline dengan proteksi earphone, normalisasi volume, dan dukungan multi-platform</small>
+            <small>Pemutar musik offline dengan proteksi earphone, normalisasi volume, dan dukungan
+              multi-platform</small>
           </div>
         </div>
       </div>
@@ -1880,7 +2309,7 @@
                 showToast('Panggilan atau sistem menginterupsi audio, musik dijeda', 'earphone-pause');
               }
             } else if (audioCtx.state === 'running' && wasPlayingBeforeDisconnect) {
-              audio.play().catch(() => {});
+              audio.play().catch(() => { });
               wasPlayingBeforeDisconnect = false;
               showToast('Audio dilanjutkan kembali', 'earphone-play');
             }
@@ -1989,7 +2418,7 @@
           } else if (!lastKnownHeadphonesConnected && hasEarphones) {
             // Earphone baru saja terhubung kembali
             if (audioCtx && audioCtx.state === 'suspended') {
-              try { await audioCtx.resume(); } catch (_) {}
+              try { await audioCtx.resume(); } catch (_) { }
             }
             if (wasPlayingBeforeDisconnect) {
               wasPlayingBeforeDisconnect = false;
@@ -2011,15 +2440,15 @@
       function updateOutputUI(isEarphone, deviceList = []) {
         // Update player bar badge using clean SVG icon
         routeIcon.innerHTML = isEarphone ? headphoneSvg : speakerSvg;
-        routeLabel.textContent = activeOutputDeviceLabel.length > 20 
-          ? activeOutputDeviceLabel.slice(0, 18) + '...' 
+        routeLabel.textContent = activeOutputDeviceLabel.length > 20
+          ? activeOutputDeviceLabel.slice(0, 18) + '...'
           : activeOutputDeviceLabel;
         playerRouteBadge.classList.toggle('earphone', isEarphone);
 
         // Update Modal
         activeDeviceTitle.textContent = activeOutputDeviceLabel;
-        activeDeviceSubtitle.textContent = isEarphone 
-          ? 'Tersambung ke Earphone / Headset (Proteksi Aktif)' 
+        activeDeviceSubtitle.textContent = isEarphone
+          ? 'Tersambung ke Earphone / Headset (Proteksi Aktif)'
           : 'Keluaran standar (Speaker Perangkat)';
 
         // Populate device list in modal
@@ -2032,7 +2461,7 @@
             const devName = dev.label || `Output Audio (${dev.deviceId ? dev.deviceId.slice(0, 8) : 'Default'})`;
             const iconSvg = isEarphone ? headphoneSvg : speakerSvg;
             item.innerHTML = `<span style="display:flex;align-items:center;gap:6px;">${iconSvg} ${escapeHtml(devName)}</span>${isCur ? '<small style="color:var(--accent);">Dipilih</small>' : ''}`;
-            
+
             item.addEventListener('click', async () => {
               if (audio.setSinkId && dev.deviceId) {
                 try {
@@ -2143,7 +2572,7 @@
           } else {
             showToast('Izin notifikasi tidak diberikan');
           }
-        } catch (_) {}
+        } catch (_) { }
       });
 
       settingsAudioPermBtn.addEventListener('click', async () => {
@@ -2362,7 +2791,7 @@
               if (dlRes.ok) {
                 audioBlob = await dlRes.blob();
               }
-            } catch (_) {}
+            } catch (_) { }
           }
 
           // 3. Client-side fallback via Cobalt open public instances (YouTube, IG, X, SC)
@@ -2404,7 +2833,7 @@
                     }
                   }
                 }
-              } catch (_) {}
+              } catch (_) { }
             }
           }
 
@@ -2420,7 +2849,7 @@
                 const meta = titleFromFilename(decodeURIComponent(fileName));
                 info = { title: meta.title, artist: meta.artist || platformName };
               }
-            } catch (_) {}
+            } catch (_) { }
           }
 
           if (!audioBlob) {
@@ -2791,7 +3220,7 @@
                 playbackRate: audio.playbackRate || 1.0,
                 position: Math.min(audio.currentTime, audio.duration)
               });
-            } catch (_) {}
+            } catch (_) { }
           }
         }
       }
