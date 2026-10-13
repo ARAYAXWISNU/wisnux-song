@@ -4,8 +4,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>wisnux song — Pemutar Musik Pintar</title>
-  <meta name="description" content="Pemutar musik lokal dan multi-sumber (YouTube, TikTok, IG, X) dengan proteksi audio pintar, normalisasi volume HP, dan Dynamic Island." />
+  <title>wisnux song - Pemutar Musik Pintar</title>
+  <meta name="description" content="Pemutar musik lokal dan multi-sumber (YouTube, TikTok, IG, X) dengan proteksi audio pintar dan normalisasi volume HP." />
 
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json" />
@@ -66,10 +66,11 @@
       --shadow-floating: 0 12px 40px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(217, 119, 87, 0.3);
     }
 
-    * {
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      text-decoration: none;
     }
 
     html, body {
@@ -95,307 +96,115 @@
     }
 
     /* ==========================================================================
-       2. DYNAMIC ISLAND (Pill & Interactive Capsule)
+       2. SETTINGS MODAL
        ========================================================================== */
-    .dynamic-island-wrapper {
+    .settings-backdrop {
       position: fixed;
-      top: 14px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1000;
-      width: auto;
-      max-width: 92vw;
-      pointer-events: none;
-    }
-
-    .dynamic-island {
-      pointer-events: auto;
-      background: #110F0D;
-      border: 1px solid rgba(217, 119, 87, 0.28);
-      border-radius: var(--radius-full);
-      color: var(--text);
-      box-shadow: var(--shadow-floating);
-      transition: all 0.38s cubic-bezier(0.2, 0.9, 0.3, 1.2);
-      overflow: hidden;
-      cursor: pointer;
-    }
-
-    /* Collapsed state */
-    .island-collapsed {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-      padding: 6px 14px 6px 8px;
-      min-height: 38px;
-    }
-
-    .island-art {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      background: var(--panel-2);
-      border: 1px solid rgba(217, 119, 87, 0.4);
-      display: grid;
-      place-items: center;
-      flex-shrink: 0;
-      color: var(--accent);
-    }
-
-    .island-art.spinning svg {
-      animation: spin 3.5s linear infinite;
-    }
-
-    .island-collapsed-info {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      max-width: 210px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .island-title {
-      font-size: 0.78rem;
-      font-weight: 500;
-      color: var(--text);
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .island-route-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      font-size: 0.68rem;
-      padding: 1px 7px;
-      border-radius: var(--radius-full);
-      background: rgba(217, 119, 87, 0.15);
-      border: 1px solid rgba(217, 119, 87, 0.3);
-      color: var(--accent);
-      flex-shrink: 0;
-    }
-
-    .island-visualizer {
-      display: flex;
-      align-items: flex-end;
-      gap: 2.5px;
-      height: 14px;
-      margin-left: 2px;
-    }
-
-    .island-visualizer i {
-      width: 2.5px;
-      border-radius: 2px;
-      background: var(--accent);
-      height: 30%;
-      opacity: 0.4;
-      transition: height 0.15s ease;
-    }
-
-    .island-visualizer.active i {
-      animation: island-bar 0.7s ease-in-out infinite alternate;
-    }
-
-    .island-visualizer.active i:nth-child(1) { animation-delay: 0.1s; }
-    .island-visualizer.active i:nth-child(2) { animation-delay: 0.35s; }
-    .island-visualizer.active i:nth-child(3) { animation-delay: 0.2s; }
-    .island-visualizer.active i:nth-child(4) { animation-delay: 0.45s; }
-
-    @keyframes island-bar {
-      0% { height: 25%; }
-      100% { height: 100%; }
-    }
-
-    .island-mini-play {
-      background: none;
-      border: none;
-      color: var(--text);
-      cursor: pointer;
-      display: grid;
-      place-items: center;
-      padding: 3px;
-      border-radius: 50%;
-      transition: color 0.15s;
-    }
-
-    .island-mini-play:hover {
-      color: var(--accent);
-    }
-
-    /* Expanded state */
-    .island-expanded {
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 2000;
       display: none;
-      padding: 1.1rem 1.25rem;
-      width: 360px;
-      max-width: 90vw;
-      flex-direction: column;
-      gap: 0.85rem;
-      cursor: default;
+      place-items: center;
+      padding: 1rem;
     }
 
-    .dynamic-island.expanded {
-      border-radius: var(--radius-xl);
-      background: #151311;
-      border-color: rgba(217, 119, 87, 0.4);
+    .settings-backdrop.open {
+      display: grid;
     }
 
-    .dynamic-island.expanded .island-collapsed {
-      display: none;
-    }
-
-    .dynamic-island.expanded .island-expanded {
-      display: flex;
-    }
-
-    .expanded-top {
-      display: flex;
-      align-items: center;
-      gap: 0.85rem;
-      position: relative;
-    }
-
-    .expanded-cover {
-      width: 46px;
-      height: 46px;
-      border-radius: var(--radius-md);
-      background: var(--panel-2);
+    .settings-modal {
+      background: #1C1916;
       border: 1px solid var(--line);
-      display: grid;
-      place-items: center;
-      flex-shrink: 0;
-      color: var(--accent);
+      border-radius: var(--radius-xl);
+      width: 100%;
+      max-width: 440px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-floating);
+      animation: modal-pop 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
     }
 
-    .expanded-meta {
+    .settings-section {
+      padding: 1rem 1.35rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .settings-section:last-child {
+      border-bottom: none;
+    }
+
+    .settings-section-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 0.65rem;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 0;
+      gap: 0.75rem;
+    }
+
+    .setting-row + .setting-row {
+      border-top: 1px solid var(--line-subtle);
+    }
+
+    .setting-info {
       flex: 1;
       min-width: 0;
     }
 
-    .expanded-title {
-      font-size: 0.88rem;
-      font-weight: 600;
+    .setting-info strong {
+      font-size: 0.84rem;
+      font-weight: 500;
       color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      display: block;
     }
 
-    .expanded-artist {
-      font-size: 0.74rem;
+    .setting-info small {
+      font-size: 0.72rem;
       color: var(--text-secondary);
-      margin-top: 1px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      display: block;
+      margin-top: 2px;
     }
 
-    .expanded-route-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.7rem;
-      color: var(--accent);
-      background: rgba(217, 119, 87, 0.12);
-      padding: 2px 8px;
-      border-radius: var(--radius-full);
-      margin-top: 4px;
-      border: 1px solid rgba(217, 119, 87, 0.25);
-      cursor: pointer;
-    }
-
-    .expanded-route-badge:hover {
-      background: rgba(217, 119, 87, 0.2);
-    }
-
-    .island-collapse-btn {
-      position: absolute;
-      right: -4px;
-      top: -4px;
-      background: none;
-      border: none;
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 1rem;
-      padding: 4px;
-      border-radius: 50%;
-    }
-
-    .island-collapse-btn:hover {
-      color: var(--text);
-    }
-
-    .expanded-progress {
+    .setting-action-btn {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
-    }
-
-    .expanded-progress .time-tag {
-      font-size: 0.65rem;
-      color: var(--muted);
-      width: 32px;
-    }
-
-    .expanded-progress input[type=range] {
-      flex: 1;
-    }
-
-    .expanded-actions {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      padding-top: 0.2rem;
-    }
-
-    .expanded-ctrl-btn {
-      background: none;
-      border: none;
-      color: var(--text);
-      cursor: pointer;
-      padding: 0.45rem;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      transition: background 0.15s, color 0.15s;
-    }
-
-    .expanded-ctrl-btn:hover {
-      background: var(--panel-2);
-      color: var(--accent);
-    }
-
-    .expanded-play-main {
-      width: 38px;
-      height: 38px;
-      background: var(--accent);
-      color: #171513;
-      border-radius: 50%;
-    }
-
-    .expanded-play-main:hover {
-      background: var(--accent-hover);
-      color: #171513;
-    }
-
-    .pip-chip-btn {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.7rem;
-      padding: 4px 9px;
+      gap: 5px;
+      font-size: 0.76rem;
+      font-weight: 500;
+      padding: 0.45rem 0.9rem;
       border-radius: var(--radius-full);
       background: var(--panel-2);
       border: 1px solid var(--line);
       color: var(--text-secondary);
       cursor: pointer;
-      transition: border-color 0.15s, color 0.15s;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      flex-shrink: 0;
     }
 
-    .pip-chip-btn:hover {
+    .setting-action-btn:hover {
       border-color: var(--accent);
       color: var(--accent);
+    }
+
+    .setting-action-btn.active {
+      color: var(--accent);
+      border-color: rgba(217, 119, 87, 0.4);
+      background: var(--accent-subtle);
+    }
+
+    .setting-action-btn.success {
+      color: var(--success);
+      border-color: rgba(94, 184, 132, 0.35);
+      background: rgba(94, 184, 132, 0.1);
     }
 
     /* ==========================================================================
@@ -479,6 +288,28 @@
       background: var(--accent-subtle);
       border: 1px solid rgba(217, 119, 87, 0.35);
       color: var(--accent);
+    }
+
+    .settings-gear-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 0.48rem 0.85rem;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      font-size: 0.76rem;
+      font-weight: 500;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .settings-gear-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--panel-2);
     }
 
     .brand-tagline {
@@ -1156,46 +987,7 @@
       text-overflow: ellipsis;
     }
 
-    /* Output Route & Normalizer Badges in Player */
-    .player-badges-row {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      margin-top: 3px;
-    }
 
-    .route-badge-btn,
-    .norm-badge-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      font-size: 0.67rem;
-      padding: 1px 7px;
-      border-radius: var(--radius-full);
-      background: var(--panel-2);
-      border: 1px solid var(--line);
-      color: var(--text-secondary);
-      cursor: pointer;
-      transition: border-color 0.15s, color 0.15s, background 0.15s;
-    }
-
-    .route-badge-btn:hover,
-    .norm-badge-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .route-badge-btn.earphone {
-      color: var(--accent);
-      border-color: rgba(217, 119, 87, 0.4);
-      background: var(--accent-subtle);
-    }
-
-    .norm-badge-btn.active {
-      color: var(--success);
-      border-color: rgba(94, 184, 132, 0.35);
-      background: rgba(94, 184, 132, 0.1);
-    }
 
     .btns {
       display: flex;
@@ -1548,98 +1340,6 @@
 
 <body>
 
-  <!-- Floating Dynamic Island Capsule -->
-  <div class="dynamic-island-wrapper">
-    <div class="dynamic-island" id="dynamicIsland">
-      <!-- Collapsed State -->
-      <div class="island-collapsed" id="islandCollapsed" title="Klik untuk membuka Dynamic Island">
-        <div class="island-art" id="islandArt">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-        </div>
-        <div class="island-collapsed-info">
-          <span class="island-title" id="islandTitle">Wisnux Player</span>
-          <span class="island-route-chip" id="islandRouteChip">
-            <span id="islandRouteIcon">🎧</span>
-            <span id="islandRouteText">Earphone</span>
-          </span>
-        </div>
-        <div class="island-visualizer" id="islandVisualizer">
-          <i></i><i></i><i></i><i></i>
-        </div>
-        <button class="island-mini-play" id="islandMiniPlay" title="Putar / Jeda">
-          <svg id="islandMiniPlayIcon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="5 3 19 12 5 21 5 3" />
-          </svg>
-        </button>
-      </div>
-
-      <!-- Expanded State -->
-      <div class="island-expanded" id="islandExpanded">
-        <div class="expanded-top">
-          <div class="expanded-cover" id="expandedCover">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-          </div>
-          <div class="expanded-meta">
-            <div class="expanded-title" id="expandedTitle">Tidak ada lagu</div>
-            <div class="expanded-artist" id="expandedArtist">Pilih lagu dari daftar</div>
-            <button class="expanded-route-badge" id="expandedRouteBadge">
-              <span id="expandedRouteIcon">🎧</span>
-              <span id="expandedRouteText">Mengecek Audio...</span>
-            </button>
-          </div>
-          <button class="island-collapse-btn" id="islandCollapseBtn" title="Ciutkan">✕</button>
-        </div>
-
-        <div class="expanded-progress">
-          <span class="time-tag mono" id="expandedCurTime">0:00</span>
-          <input type="range" id="expandedSeekBar" min="0" max="0" value="0" step="0.1" />
-          <span class="time-tag mono" id="expandedDurTime">0:00</span>
-        </div>
-
-        <div class="expanded-actions">
-          <button class="pip-chip-btn" id="islandPipBtn" title="Dynamic Island Mengambang di Beranda HP (PiP)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="2" y="3" width="20" height="14" rx="2" />
-              <rect x="12" y="9" width="8" height="6" rx="1" />
-            </svg>
-            <span>PiP Beranda</span>
-          </button>
-
-          <div style="display:flex;align-items:center;gap:0.4rem;">
-            <button class="expanded-ctrl-btn" id="islandPrevBtn" title="Sebelumnya">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="19 20 9 12 19 4 19 20" />
-                <rect x="5" y="4" width="2" height="16" />
-              </svg>
-            </button>
-            <button class="expanded-ctrl-btn expanded-play-main" id="islandPlayBtn" title="Putar">
-              <svg id="islandPlayIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="5 3 19 12 5 21 5 3" />
-              </svg>
-            </button>
-            <button class="expanded-ctrl-btn" id="islandNextBtn" title="Berikutnya">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="5 4 15 12 5 20 5 4" />
-                <rect x="17" y="4" width="2" height="16" />
-              </svg>
-            </button>
-          </div>
-
-          <button class="pip-chip-btn" id="islandNormBtn" title="Normalisasi Volume Menyesuaikan HP">
-            <span id="islandNormIcon">⚖️</span>
-            <span id="islandNormText">Volume HP</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer"></div>
 
@@ -1658,28 +1358,20 @@
         <div>
           <div class="brand-heading-row">
             <h1 class="serif">wisnux song</h1>
-            <span class="claude-pill-badge">✦ Claude Edition</span>
+            <span class="claude-pill-badge">v2</span>
           </div>
-          <p class="brand-tagline">Pemutar musik pintar & offline — proteksi earphone & normalisasi HP</p>
+          <p class="brand-tagline">Pemutar musik pintar dan offline, proteksi earphone dan normalisasi HP</p>
         </div>
       </div>
 
       <div class="header-actions">
         <div class="vu" id="headerVu"></div>
-        <button id="pipHeaderBtn" class="header-pill-btn" title="Jadikan Dynamic Island mengambang di layar HP">
+        <button id="settingsHeaderBtn" class="settings-gear-btn" title="Pengaturan">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="2" y="3" width="20" height="14" rx="2" />
-            <rect x="12" y="9" width="8" height="6" rx="1" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
           </svg>
-          <span>PiP</span>
-        </button>
-        <button id="installBtn" class="header-pill-btn" style="display:none;" title="Pasang sebagai aplikasi PWA/APK">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
-          <span>Instal</span>
+          <span>Setting</span>
         </button>
       </div>
     </header>
@@ -1696,17 +1388,17 @@
           </div>
           <div>
             <h2>Unduh Musik dari Tautan Online</h2>
-            <p>Masukkan link YouTube, TikTok, IG, X/Twitter, Spotify — langsung tersimpan offline di HP</p>
+            <p>Masukkan link YouTube, TikTok, IG, X/Twitter, Spotify. Langsung tersimpan offline di HP</p>
           </div>
         </div>
 
         <div class="platform-pills">
-          <span class="platform-pill active" data-platform="yt">🔴 YouTube</span>
-          <span class="platform-pill active" data-platform="tt">🎵 TikTok</span>
-          <span class="platform-pill active" data-platform="ig">📸 Instagram</span>
-          <span class="platform-pill active" data-platform="x">✖️ X/Twitter</span>
-          <span class="platform-pill active" data-platform="sp">🟢 Spotify</span>
-          <span class="platform-pill active" data-platform="sc">🟠 SoundCloud</span>
+          <span class="platform-pill active" data-platform="yt">YouTube</span>
+          <span class="platform-pill active" data-platform="tt">TikTok</span>
+          <span class="platform-pill active" data-platform="ig">Instagram</span>
+          <span class="platform-pill active" data-platform="x">X/Twitter</span>
+          <span class="platform-pill active" data-platform="sp">Spotify</span>
+          <span class="platform-pill active" data-platform="sc">SoundCloud</span>
         </div>
       </div>
 
@@ -1745,7 +1437,7 @@
       </div>
       <div>
         <strong>Pilih Berkas Lagu atau Video dari HP / Laptop</strong>
-        <small>Mendukung MP3, WAV, FLAC, M4A, OGG, MP4, MKV, WEBM — diproses lokal & disimpan aman di IndexedDB.</small>
+        <small>Mendukung MP3, WAV, FLAC, M4A, OGG, MP4, MKV, WEBM. Diproses lokal dan disimpan aman di IndexedDB.</small>
       </div>
     </div>
 
@@ -1790,11 +1482,15 @@
             <div class="artist" id="nowArtist">Pilih lagu dari daftar</div>
             <div class="player-badges-row">
               <button class="route-badge-btn" id="playerRouteBadge" title="Klik untuk melihat/mengatur rute audio output">
-                <span id="routeIcon">🎧</span>
+                <span id="routeIcon">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+                </span>
                 <span id="routeLabel">Earphone</span>
               </button>
               <button class="norm-badge-btn active" id="playerNormBadge" title="Klik untuk mengatur normalisasi volume HP">
-                <span>⚖️</span>
+                <span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 7v10M18 7v10M3 10v4M21 10v4M9 5v14M15 5v14"/></svg>
+                </span>
                 <span id="normLabel">Volume HP: Adaptif</span>
               </button>
             </div>
@@ -1865,7 +1561,7 @@
           </svg>
           <h3>Status & Rute Audio Output</h3>
         </div>
-        <button class="modal-close-btn" id="closeOutputModalBtn">✕</button>
+        <button class="modal-close-btn" id="closeOutputModalBtn">&#10005;</button>
       </div>
       <div class="modal-body">
         <div class="active-device-box">
@@ -1882,14 +1578,19 @@
           </label>
           <div class="device-list" id="deviceListEl">
             <div class="device-item active">
-              <span>🎧 Earphone / Default Audio Out</span>
+              <span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+                Earphone / Default Audio Out
+              </span>
               <small style="color:var(--accent);">Aktif</small>
             </div>
           </div>
         </div>
 
         <div class="info-callout">
-          <span style="font-size:1.1rem;flex-shrink:0;">🛡️</span>
+          <span style="font-size:1.1rem;flex-shrink:0;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </span>
           <div>
             <strong>Fitur Proteksi Earphone Aktif:</strong>
             Saat earphone/headphone terputus, lagu langsung dijeda otomatis agar tidak berisik di tempat umum. Saat dicolok/dihubungkan lagi, lagu akan langsung otomatis melanjutkan pemutaran.
@@ -1899,11 +1600,81 @@
     </div>
   </div>
 
-  <!-- Hidden elements for Canvas/Video Picture-in-Picture Dynamic Island -->
-  <canvas id="pipCanvas" width="512" height="512" style="display:none;"></canvas>
-  <video id="pipVideo" autoplay muted playsinline style="display:none;"></video>
+  <!-- Settings Modal -->
+  <div class="settings-backdrop" id="settingsBackdrop">
+    <div class="settings-modal">
+      <div class="settings-section" style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:0.6rem;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+          <h3 style="font-size:0.95rem;font-weight:600;color:var(--text);">Pengaturan</h3>
+        </div>
+        <button class="modal-close-btn" id="closeSettingsBtn">&#10005;</button>
+      </div>
 
-  <div class="offline-pill" id="offlinePill"><span class="dot"></span> Mode offline — aplikasi tetap berjalan</div>
+      <div class="settings-section">
+        <div class="settings-section-title">Instalasi &amp; Penyimpanan</div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <strong>Instal Aplikasi (PWA)</strong>
+            <small>Pasang sebagai aplikasi di HP atau laptop agar bisa dibuka tanpa browser</small>
+          </div>
+          <button class="setting-action-btn" id="settingsInstallBtn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Instal</span>
+          </button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <strong>Izinkan Notifikasi</strong>
+            <small>Menampilkan notifikasi saat lagu berganti atau earphone terputus</small>
+          </div>
+          <button class="setting-action-btn" id="settingsNotifBtn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span id="notifBtnLabel">Izinkan</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Audio &amp; Perangkat</div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <strong>Izinkan Akses Perangkat Audio</strong>
+            <small>Diperlukan untuk mendeteksi earphone/headphone dan mengalihkan rute audio</small>
+          </div>
+          <button class="setting-action-btn" id="settingsAudioPermBtn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+            <span id="audioPermBtnLabel">Izinkan</span>
+          </button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <strong>Normalisasi Volume HP</strong>
+            <small id="settingsNormDesc">Mode Adaptif: volume lagu disesuaikan agar stabil</small>
+          </div>
+          <button class="setting-action-btn" id="settingsNormBtn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 7v10M18 7v10M3 10v4M21 10v4M9 5v14M15 5v14"/></svg>
+            <span id="settingsNormLabel">Adaptif</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Tentang</div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <strong>wisnux song v2</strong>
+            <small>Pemutar musik offline dengan proteksi earphone, normalisasi volume, dan dukungan multi-platform</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="offline-pill" id="offlinePill"><span class="dot"></span> Mode offline, aplikasi tetap berjalan</div>
   <audio id="audio" preload="auto" playsinline crossorigin="anonymous"></audio>
 
   <!-- ==========================================================================
@@ -2019,31 +1790,6 @@
       const barDisc = document.getElementById('barDisc');
       const headerVu = document.getElementById('headerVu');
 
-      // Dynamic Island elements
-      const dynamicIsland = document.getElementById('dynamicIsland');
-      const islandArt = document.getElementById('islandArt');
-      const islandTitle = document.getElementById('islandTitle');
-      const islandRouteChip = document.getElementById('islandRouteChip');
-      const islandRouteIcon = document.getElementById('islandRouteIcon');
-      const islandRouteText = document.getElementById('islandRouteText');
-      const islandVisualizer = document.getElementById('islandVisualizer');
-      const islandMiniPlay = document.getElementById('islandMiniPlay');
-      const islandMiniPlayIcon = document.getElementById('islandMiniPlayIcon');
-
-      const expandedTitle = document.getElementById('expandedTitle');
-      const expandedArtist = document.getElementById('expandedArtist');
-      const expandedRouteBadge = document.getElementById('expandedRouteBadge');
-      const expandedSeekBar = document.getElementById('expandedSeekBar');
-      const expandedCurTime = document.getElementById('expandedCurTime');
-      const expandedDurTime = document.getElementById('expandedDurTime');
-      const islandPrevBtn = document.getElementById('islandPrevBtn');
-      const islandPlayBtn = document.getElementById('islandPlayBtn');
-      const islandPlayIcon = document.getElementById('islandPlayIcon');
-      const islandNextBtn = document.getElementById('islandNextBtn');
-      const islandPipBtn = document.getElementById('islandPipBtn');
-      const islandNormBtn = document.getElementById('islandNormBtn');
-      const islandCollapseBtn = document.getElementById('islandCollapseBtn');
-
       // Output modal & Badges
       const playerRouteBadge = document.getElementById('playerRouteBadge');
       const routeIcon = document.getElementById('routeIcon');
@@ -2058,7 +1804,19 @@
       const deviceListEl = document.getElementById('deviceListEl');
 
       const toastContainer = document.getElementById('toastContainer');
-      const pipHeaderBtn = document.getElementById('pipHeaderBtn');
+
+      // Settings modal elements
+      const settingsBackdrop = document.getElementById('settingsBackdrop');
+      const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+      const settingsHeaderBtn = document.getElementById('settingsHeaderBtn');
+      const settingsInstallBtn = document.getElementById('settingsInstallBtn');
+      const settingsNotifBtn = document.getElementById('settingsNotifBtn');
+      const notifBtnLabel = document.getElementById('notifBtnLabel');
+      const settingsAudioPermBtn = document.getElementById('settingsAudioPermBtn');
+      const audioPermBtnLabel = document.getElementById('audioPermBtnLabel');
+      const settingsNormBtn = document.getElementById('settingsNormBtn');
+      const settingsNormLabel = document.getElementById('settingsNormLabel');
+      const settingsNormDesc = document.getElementById('settingsNormDesc');
 
       let muted = false;
       let lastVolume = 0.75;
@@ -2119,12 +1877,12 @@
               if (isPlaying) {
                 audio.pause();
                 wasPlayingBeforeDisconnect = true;
-                showToast('⏳ Panggilan/sistem menginterupsi audio — dijeda', 'earphone-pause');
+                showToast('Panggilan atau sistem menginterupsi audio, musik dijeda', 'earphone-pause');
               }
             } else if (audioCtx.state === 'running' && wasPlayingBeforeDisconnect) {
               audio.play().catch(() => {});
               wasPlayingBeforeDisconnect = false;
-              showToast('✓ Audio dilanjutkan kembali', 'earphone-play');
+              showToast('Audio dilanjutkan kembali', 'earphone-play');
             }
           };
         } catch (e) {
@@ -2164,25 +1922,34 @@
         if (volumeNormMode === "adaptive") {
           volumeNormMode = "gentle";
           normLabel.textContent = "Volume HP: Lembut";
-          showToast('🌙 Mode Lembut aktif: kenyaringan diperhalus untuk suasana santai');
+          settingsNormLabel.textContent = "Lembut";
+          settingsNormDesc.textContent = "Mode Lembut: kenyaringan diperhalus untuk suasana santai";
+          showToast('Mode Lembut aktif. Kenyaringan diperhalus untuk suasana santai.');
         } else if (volumeNormMode === "gentle") {
           volumeNormMode = "bypass";
           normLabel.textContent = "Volume HP: Asli (Non-aktif)";
+          settingsNormLabel.textContent = "Non-aktif";
+          settingsNormDesc.textContent = "Mode Asli: kompresi dinamis dinonaktifkan";
           playerNormBadge.classList.remove('active');
-          showToast('⚡ Mode Asli aktif: kompresi dinamis dinonaktifkan');
+          showToast('Mode Asli aktif. Kompresi dinamis dinonaktifkan.');
         } else {
           volumeNormMode = "adaptive";
           normLabel.textContent = "Volume HP: Adaptif";
+          settingsNormLabel.textContent = "Adaptif";
+          settingsNormDesc.textContent = "Mode Adaptif: volume lagu disesuaikan agar stabil dengan volume HP";
           playerNormBadge.classList.add('active');
-          showToast('⚖️ Mode Adaptif HP aktif: volume lagu disesuaikan agar stabil dengan volume HP');
+          showToast('Mode Adaptif HP aktif. Volume lagu disesuaikan agar stabil.');
         }
         applyCompressorMode(volumeNormMode);
       }
 
       playerNormBadge.addEventListener('click', cycleVolumeNormMode);
-      islandNormBtn.addEventListener('click', cycleVolumeNormMode);
+      settingsNormBtn.addEventListener('click', cycleVolumeNormMode);
 
       // ---------- Audio Output Device Manager & Earphone Protection ----------
+      const speakerSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>';
+      const headphoneSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>';
+
       async function inspectAudioOutputDevices() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
           activeOutputDeviceLabel = "Speaker / Earphone HP";
@@ -2213,20 +1980,23 @@
 
           // Otomatisasi Proteksi Earphone Terputus & Terhubung
           if (lastKnownHeadphonesConnected && !hasEarphones) {
-            // Earphone baru saja terputus!
+            // Earphone baru saja terputus
             if (isPlaying) {
               pause();
               wasPlayingBeforeDisconnect = true;
-              showToast('🎧 <strong>Earphone terputus!</strong> Musik dijeda otomatis demi kenyamanan.', 'earphone-pause', 4500);
+              showToast('Earphone terputus. Musik dijeda otomatis demi kenyamanan.', 'earphone-pause', 4500);
             }
           } else if (!lastKnownHeadphonesConnected && hasEarphones) {
-            // Earphone baru saja terhubung kembali!
+            // Earphone baru saja terhubung kembali
+            if (audioCtx && audioCtx.state === 'suspended') {
+              try { await audioCtx.resume(); } catch (_) {}
+            }
             if (wasPlayingBeforeDisconnect) {
-              play();
               wasPlayingBeforeDisconnect = false;
-              showToast('🎧 <strong>Earphone terhubung kembali!</strong> Melanjutkan musik otomatis.', 'earphone-play', 4500);
+              play();
+              showToast('Earphone terhubung kembali. Melanjutkan musik otomatis.', 'earphone-play', 4500);
             } else {
-              showToast('🎧 Earphone terdeteksi siap digunakan.', 'earphone-play', 2800);
+              showToast('Earphone terdeteksi siap digunakan.', 'earphone-play', 2800);
             }
           }
 
@@ -2239,20 +2009,12 @@
       }
 
       function updateOutputUI(isEarphone, deviceList = []) {
-        const icon = isEarphone ? '🎧' : '🔊';
-        const shortName = isEarphone ? 'Earphone' : 'Speaker HP';
-
-        // Update player bar badge
-        routeIcon.textContent = icon;
+        // Update player bar badge using clean SVG icon
+        routeIcon.innerHTML = isEarphone ? headphoneSvg : speakerSvg;
         routeLabel.textContent = activeOutputDeviceLabel.length > 20 
           ? activeOutputDeviceLabel.slice(0, 18) + '...' 
           : activeOutputDeviceLabel;
         playerRouteBadge.classList.toggle('earphone', isEarphone);
-
-        // Update Dynamic Island
-        islandRouteIcon.textContent = icon;
-        islandRouteText.textContent = shortName;
-        expandedRouteBadge.innerHTML = `<span>${icon}</span> <span>${escapeHtml(activeOutputDeviceLabel)}</span>`;
 
         // Update Modal
         activeDeviceTitle.textContent = activeOutputDeviceLabel;
@@ -2268,7 +2030,8 @@
             const isCur = dev.deviceId === activeOutputDeviceId || (activeOutputDeviceId === 'default' && !dev.deviceId);
             item.className = `device-item ${isCur ? 'active' : ''}`;
             const devName = dev.label || `Output Audio (${dev.deviceId ? dev.deviceId.slice(0, 8) : 'Default'})`;
-            item.innerHTML = `<span>${isEarphone ? '🎧' : '🔊'} ${escapeHtml(devName)}</span>${isCur ? '<small style="color:var(--accent);">Dipilih</small>' : ''}`;
+            const iconSvg = isEarphone ? headphoneSvg : speakerSvg;
+            item.innerHTML = `<span style="display:flex;align-items:center;gap:6px;">${iconSvg} ${escapeHtml(devName)}</span>${isCur ? '<small style="color:var(--accent);">Dipilih</small>' : ''}`;
             
             item.addEventListener('click', async () => {
               if (audio.setSinkId && dev.deviceId) {
@@ -2277,9 +2040,9 @@
                   activeOutputDeviceId = dev.deviceId;
                   activeOutputDeviceLabel = devName;
                   inspectAudioOutputDevices();
-                  showToast(`✓ Rute audio dialihkan ke: ${devName}`);
+                  showToast('Rute audio dialihkan ke: ' + devName);
                 } catch (e) {
-                  showToast(`Tidak dapat mengalihkan rute audio: ${e.message}`);
+                  showToast('Tidak dapat mengalihkan rute audio: ' + e.message);
                 }
               }
             });
@@ -2298,20 +2061,17 @@
       // Earphone / Interruption Listeners on Audio Element
       audio.addEventListener('waiting', () => {
         isAudioInterrupted = true;
-        islandVisualizer.classList.remove('active');
-        showToast('⏳ Sinyal audio buffering / stabilisasi...', '', 2000);
+        showToast('Sinyal audio buffering...', '', 2000);
       });
 
       audio.addEventListener('stalled', () => {
         isAudioInterrupted = true;
-        islandVisualizer.classList.remove('active');
       });
 
       audio.addEventListener('playing', () => {
         if (isAudioInterrupted) {
           isAudioInterrupted = false;
-          islandVisualizer.classList.add('active');
-          showToast('✓ Audio normal kembali', '', 1800);
+          showToast('Audio normal kembali', '', 1800);
         }
       });
 
@@ -2325,194 +2085,83 @@
       }
 
       playerRouteBadge.addEventListener('click', openOutputModal);
-      expandedRouteBadge.addEventListener('click', openOutputModal);
       closeOutputModalBtn.addEventListener('click', closeOutputModal);
       outputModalBackdrop.addEventListener('click', (e) => {
         if (e.target === outputModalBackdrop) closeOutputModal();
       });
 
-      // ---------- Dynamic Island Interactions ----------
-      function expandIsland() {
-        dynamicIsland.classList.add('expanded');
+      // Settings modal open / close & interactions
+      function openSettingsModal() {
+        settingsBackdrop.classList.add('open');
+        updateSettingsUI();
+      }
+      function closeSettingsModal() {
+        settingsBackdrop.classList.remove('open');
       }
 
-      function collapseIsland(e) {
-        if (e) e.stopPropagation();
-        dynamicIsland.classList.remove('expanded');
-      }
-
-      dynamicIsland.addEventListener('click', (e) => {
-        if (!dynamicIsland.classList.contains('expanded')) {
-          expandIsland();
-        }
+      settingsHeaderBtn.addEventListener('click', openSettingsModal);
+      closeSettingsBtn.addEventListener('click', closeSettingsModal);
+      settingsBackdrop.addEventListener('click', (e) => {
+        if (e.target === settingsBackdrop) closeSettingsModal();
       });
 
-      islandCollapseBtn.addEventListener('click', collapseIsland);
-
-      islandMiniPlay.addEventListener('click', (e) => {
-        e.stopPropagation();
-        togglePlay();
-      });
-
-      islandPlayBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        togglePlay();
-      });
-
-      islandPrevBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        playPrev();
-      });
-
-      islandNextBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        playNext();
-      });
-
-      expandedSeekBar.addEventListener('input', () => {
-        audio.currentTime = Number(expandedSeekBar.value);
-        updatePositionState();
-      });
-
-      // ---------- Picture-in-Picture (Dynamic Island Floating in Home Screen) ----------
-      const pipCanvas = document.getElementById('pipCanvas');
-      const pipVideo = document.getElementById('pipVideo');
-      let pipCtx = pipCanvas.getContext('2d');
-      let pipAnimFrame = null;
-
-      function renderPiPFrame() {
-        pipCtx.fillStyle = '#141210';
-        pipCtx.fillRect(0, 0, 512, 512);
-
-        // Draw pill capsule
-        pipCtx.fillStyle = '#221E1A';
-        pipCtx.strokeStyle = isPlaying ? '#D97757' : '#3E362E';
-        pipCtx.lineWidth = 4;
-        roundRect(pipCtx, 36, 60, 440, 392, 40, true, true);
-
-        // Header
-        pipCtx.fillStyle = '#D97757';
-        pipCtx.font = 'bold 22px sans-serif';
-        pipCtx.fillText('✦ Wisnux Dynamic Island', 64, 110);
-
-        // Title
-        pipCtx.fillStyle = '#F5EFE6';
-        pipCtx.font = 'bold 26px sans-serif';
-        const t = tracks[currentIndex];
-        const titleText = t ? t.title : 'Tidak ada lagu';
-        pipCtx.fillText(titleText.slice(0, 24), 64, 175);
-
-        // Artist & Output Device
-        pipCtx.fillStyle = '#A89F93';
-        pipCtx.font = '20px sans-serif';
-        const artistText = t ? t.artist : 'Pilih lagu dari web';
-        pipCtx.fillText(artistText.slice(0, 28), 64, 215);
-
-        // Output badge
-        pipCtx.fillStyle = '#2C2722';
-        roundRect(pipCtx, 64, 245, 260, 42, 21, true, false);
-        pipCtx.fillStyle = '#D97757';
-        pipCtx.font = '16px sans-serif';
-        pipCtx.fillText(`🎧 ${activeOutputDeviceLabel.slice(0, 20)}`, 80, 272);
-
-        // Progress bar
-        const progress = (audio.duration && isFinite(audio.duration)) ? (audio.currentTime / audio.duration) : 0;
-        pipCtx.fillStyle = '#332D26';
-        roundRect(pipCtx, 64, 330, 384, 10, 5, true, false);
-        pipCtx.fillStyle = '#D97757';
-        roundRect(pipCtx, 64, 330, Math.max(10, 384 * progress), 10, 5, true, false);
-
-        // Time
-        pipCtx.fillStyle = '#7E756B';
-        pipCtx.font = '16px monospace';
-        pipCtx.fillText(fmtTime(audio.currentTime), 64, 365);
-        pipCtx.fillText(fmtTime(audio.duration), 405, 365);
-
-        // Playing status
-        pipCtx.fillStyle = isPlaying ? '#5EB884' : '#E8A33D';
-        pipCtx.beginPath();
-        pipCtx.arc(430, 102, 8, 0, Math.PI * 2);
-        pipCtx.fill();
-
-        if (document.pictureInPictureElement === pipVideo) {
-          pipAnimFrame = requestAnimationFrame(renderPiPFrame);
-        }
-      }
-
-      function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
-        ctx.beginPath();
-        ctx.moveTo(x + radius, y);
-        ctx.lineTo(x + width - radius, y);
-        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-        ctx.lineTo(x + width, y + height - radius);
-        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-        ctx.lineTo(x + radius, y + height);
-        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-        ctx.lineTo(x, y + radius);
-        ctx.quadraticCurveTo(x, y, x + radius, y);
-        ctx.closePath();
-        if (fill) ctx.fill();
-        if (stroke) ctx.stroke();
-      }
-
-      async function triggerPictureInPictureIsland() {
-        try {
-          // 1. Try Document Picture-in-Picture (Chromium 116+)
-          if (window.documentPictureInPicture && window.documentPictureInPicture.requestWindow) {
-            const pipWin = await window.documentPictureInPicture.requestWindow({
-              width: 380,
-              height: 240,
-            });
-
-            // Copy CSS
-            document.querySelectorAll('style, link[rel="stylesheet"]').forEach(el => {
-              pipWin.document.head.appendChild(el.cloneNode(true));
-            });
-
-            pipWin.document.body.innerHTML = `
-              <div style="background:#151311;color:#F5EFE6;padding:1rem;height:100vh;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;font-family:sans-serif;">
-                <div style="display:flex;align-items:center;justify-content:space-between;">
-                  <span style="font-size:0.75rem;color:#D97757;font-weight:600;">✦ Wisnux Floating Island</span>
-                  <span style="font-size:0.68rem;padding:2px 8px;border-radius:999px;background:#24201C;border:1px solid #3A332B;color:#D97757;">${escapeHtml(activeOutputDeviceLabel.slice(0, 18))}</span>
-                </div>
-                <div>
-                  <div id="pipSongTitle" style="font-weight:600;font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(nowTitle.textContent)}</div>
-                  <div id="pipSongArtist" style="font-size:0.75rem;color:#A89F93;margin-top:2px;">${escapeHtml(nowArtist.textContent)}</div>
-                </div>
-                <div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;">
-                  <button id="pipPrev" style="background:#282420;border:1px solid #3A332B;color:#fff;border-radius:50%;width:34px;height:34px;cursor:pointer;">⏮</button>
-                  <button id="pipPlay" style="background:#D97757;border:none;color:#171513;border-radius:50%;width:42px;height:42px;font-size:1.1rem;cursor:pointer;">${isPlaying ? '⏸' : '▶'}</button>
-                  <button id="pipNext" style="background:#282420;border:1px solid #3A332B;color:#fff;border-radius:50%;width:34px;height:34px;cursor:pointer;">⏭</button>
-                </div>
-              </div>
-            `;
-
-            pipWin.document.getElementById('pipPlay').addEventListener('click', () => {
-              togglePlay();
-              pipWin.document.getElementById('pipPlay').textContent = isPlaying ? '⏸' : '▶';
-            });
-            pipWin.document.getElementById('pipPrev').addEventListener('click', () => playPrev());
-            pipWin.document.getElementById('pipNext').addEventListener('click', () => playNext());
-
-            showToast('✓ Dynamic Island kini melayang di Layar Utama HP!');
-            return;
+      function updateSettingsUI() {
+        if ('Notification' in window) {
+          if (Notification.permission === 'granted') {
+            notifBtnLabel.textContent = 'Diizinkan';
+            settingsNotifBtn.classList.add('success');
+          } else if (Notification.permission === 'denied') {
+            notifBtnLabel.textContent = 'Ditolak';
+            settingsNotifBtn.classList.remove('success');
+          } else {
+            notifBtnLabel.textContent = 'Izinkan';
+            settingsNotifBtn.classList.remove('success');
           }
-
-          // 2. Fallback to Canvas Video PiP
-          renderPiPFrame();
-          const stream = pipCanvas.captureStream(15);
-          pipVideo.srcObject = stream;
-          await pipVideo.play();
-          await pipVideo.requestPictureInPicture();
-          showToast('✓ Dynamic Island melayang di Layar Utama (PiP)!');
-        } catch (err) {
-          console.warn("PiP error:", err);
-          showToast('Dynamic Island aktif! Tekan tombol navigasi lock screen untuk kontrol dari luar aplikasi.');
+        }
+        if (volumeNormMode === 'adaptive') {
+          settingsNormLabel.textContent = 'Adaptif';
+          settingsNormDesc.textContent = 'Mode Adaptif: volume lagu disesuaikan agar stabil dengan volume HP';
+        } else if (volumeNormMode === 'gentle') {
+          settingsNormLabel.textContent = 'Lembut';
+          settingsNormDesc.textContent = 'Mode Lembut: kenyaringan diperhalus untuk suasana santai';
+        } else {
+          settingsNormLabel.textContent = 'Non-aktif';
+          settingsNormDesc.textContent = 'Mode Asli: kompresi dinamis dinonaktifkan';
         }
       }
 
-      pipHeaderBtn.addEventListener('click', triggerPictureInPictureIsland);
-      islandPipBtn.addEventListener('click', triggerPictureInPictureIsland);
+      settingsNotifBtn.addEventListener('click', async () => {
+        if (!('Notification' in window)) {
+          showToast('Browser ini tidak mendukung fitur notifikasi');
+          return;
+        }
+        try {
+          const res = await Notification.requestPermission();
+          updateSettingsUI();
+          if (res === 'granted') {
+            showToast('Izin notifikasi berhasil diaktifkan');
+          } else {
+            showToast('Izin notifikasi tidak diberikan');
+          }
+        } catch (_) {}
+      });
+
+      settingsAudioPermBtn.addEventListener('click', async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          showToast('Browser tidak mendukung pendeteksian nama perangkat');
+          return;
+        }
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          stream.getTracks().forEach(t => t.stop());
+          audioPermBtnLabel.textContent = 'Diizinkan';
+          settingsAudioPermBtn.classList.add('success');
+          await inspectAudioOutputDevices();
+          showToast('Izin perangkat audio berhasil diberikan');
+        } catch (e) {
+          showToast('Izin perangkat audio ditolak atau tidak tersedia');
+        }
+      });
 
       // ---------- VU Meter Setup ----------
       const VU_BARS = 14;
@@ -2534,8 +2183,6 @@
         });
         headerDisc.classList.toggle('spin', playing);
         barDisc.classList.toggle('spin', playing);
-        islandArt.classList.toggle('spinning', playing);
-        islandVisualizer.classList.toggle('active', playing);
       }
 
       // ---------- Helpers ----------
@@ -2615,7 +2262,7 @@
           loadTrack(0);
         }
         updateControlsDisabled();
-        showToast(`✓ Berhasil menambahkan ${files.length} lagu ke daftar`);
+        showToast(`Berhasil menambahkan ${files.length} lagu ke daftar`);
       }
 
       fileInput.addEventListener('change', (e) => {
@@ -2699,7 +2346,7 @@
               }
             } else {
               const errData = await apiRes.json().catch(() => ({}));
-              if (errData.error) throw new Error(errData.error);
+              if (errData.error) console.warn("API notice:", errData.error);
             }
           } catch (backendErr) {
             console.warn("Backend API attempt notice:", backendErr.message);
@@ -2707,20 +2354,80 @@
 
           // 2. Client-side fallback untuk TikTok
           if (!audioBlob && cleanUrl.toLowerCase().includes('tiktok.com')) {
-            showLinkStatus(`<div class="spinner"></div> Mencoba koneksi langsung ke TikTok...`, '');
-            const clientInfo = await fetchTikTokClientFallback(cleanUrl);
-            info = { title: clientInfo.title, artist: clientInfo.artist };
-            const dlRes = await fetch(clientInfo.audioUrl);
-            if (dlRes.ok) {
-              audioBlob = await dlRes.blob();
+            try {
+              showLinkStatus(`<div class="spinner"></div> Menghubungkan langsung ke TikTok...`, '');
+              const clientInfo = await fetchTikTokClientFallback(cleanUrl);
+              info = { title: clientInfo.title, artist: clientInfo.artist };
+              const dlRes = await fetch(clientInfo.audioUrl);
+              if (dlRes.ok) {
+                audioBlob = await dlRes.blob();
+              }
+            } catch (_) {}
+          }
+
+          // 3. Client-side fallback via Cobalt open public instances (YouTube, IG, X, SC)
+          if (!audioBlob) {
+            const cobaltEndpoints = [
+              'https://api.cobalt.tools',
+              'https://cobalt-api.kwiatekm.tokyo',
+              'https://cobalt.api.scip.io',
+              'https://api.server.artemislena.eu'
+            ];
+            for (const ep of cobaltEndpoints) {
+              try {
+                showLinkStatus(`<div class="spinner"></div> Menghubungkan ke server audio alternatif (${platformName})...`, '');
+                const cRes = await fetch(ep, {
+                  method: 'POST',
+                  headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    url: cleanUrl,
+                    downloadMode: 'audio',
+                    audioFormat: 'mp3'
+                  }),
+                  signal: AbortSignal.timeout(6500)
+                });
+                if (cRes.ok) {
+                  const cData = await cRes.json();
+                  const targetAudio = cData.url || cData.audio;
+                  if (targetAudio) {
+                    const audioFetch = await fetch(targetAudio);
+                    if (audioFetch.ok) {
+                      audioBlob = await audioFetch.blob();
+                      info = {
+                        title: cData.filename ? cData.filename.replace(/\.[^/.]+$/, '') : `${platformName} Audio`,
+                        artist: platformName
+                      };
+                      break;
+                    }
+                  }
+                }
+              } catch (_) {}
             }
+          }
+
+          // 4. Direct audio/video file URL fallback
+          if (!audioBlob && /\.(mp3|wav|ogg|flac|m4a|aac|mp4|webm)(\?.*)?$/i.test(cleanUrl)) {
+            try {
+              showLinkStatus(`<div class="spinner"></div> Mengunduh file media langsung...`, '');
+              const directRes = await fetch(cleanUrl);
+              if (directRes.ok) {
+                audioBlob = await directRes.blob();
+                const urlParts = cleanUrl.split('/');
+                const fileName = urlParts[urlParts.length - 1].split('?')[0];
+                const meta = titleFromFilename(decodeURIComponent(fileName));
+                info = { title: meta.title, artist: meta.artist || platformName };
+              }
+            } catch (_) {}
           }
 
           if (!audioBlob) {
             throw new Error(`Tidak dapat mengunduh audio dari ${platformName}. Pastikan link publik dan dapat diakses.`);
           }
 
-          // 3. Simpan sebagai file MP3 offline
+          // 5. Simpan sebagai file MP3 offline
           const safeTitle = (info.title || 'lagu_online').replace(/[^a-zA-Z0-9\s-_]/g, '').trim() || 'audio_wisnux';
           const audioFile = new File([audioBlob], `${safeTitle}.mp3`, { type: 'audio/mpeg' });
 
@@ -2751,8 +2458,8 @@
           }
           updateControlsDisabled();
 
-          showLinkStatus(`✓ Berhasil menambahkan: "${escapeHtml(newTrack.title)}" oleh ${escapeHtml(newTrack.artist)}`, 'success');
-          showToast(`✓ Berhasil mengunduh dari ${platformName}!`, 'earphone-play');
+          showLinkStatus(`Berhasil menambahkan: "${escapeHtml(newTrack.title)}" oleh ${escapeHtml(newTrack.artist)}`, 'success');
+          showToast(`Berhasil mengunduh lagu dari ${platformName}`, 'earphone-play');
           linkInput.value = '';
         } catch (err) {
           console.error("Link download error:", err);
@@ -2799,11 +2506,7 @@
             audio.removeAttribute('src');
             nowTitle.textContent = "Tidak ada lagu diputar";
             nowArtist.textContent = "Pilih lagu dari daftar";
-            islandTitle.textContent = "Wisnux Player";
-            expandedTitle.textContent = "Tidak ada lagu";
-            expandedArtist.textContent = "Pilih lagu dari daftar";
             seekBar.value = 0; seekBar.max = 0;
-            expandedSeekBar.value = 0; expandedSeekBar.max = 0;
             curTimeEl.textContent = "0:00"; durTimeEl.textContent = "0:00";
             updateMediaSessionMetadata(null);
           } else {
@@ -3006,9 +2709,6 @@
         if (tracks[currentIndex] && tracks[currentIndex].id === id) {
           nowTitle.textContent = t.title;
           nowArtist.textContent = t.artist;
-          islandTitle.textContent = t.title;
-          expandedTitle.textContent = t.title;
-          expandedArtist.textContent = t.artist;
         }
         saveSong({
           id: t.id,
@@ -3033,16 +2733,25 @@
 
       function pickNextIndex() {
         if (tracks.length === 0) return -1;
-        if (tracks.length === 1) return 0;
+        if (tracks.length === 1) return (repeatMode === 'one' || repeatMode === 'all') ? 0 : -1;
 
         if (shuffle) {
           if (shufflePool.length === 0 || shufflePool.some(idx => idx >= tracks.length)) {
+            if (repeatMode === 'off') {
+              // Jika mode ulangi mati, jangan isi ulang pool acak
+              return -1;
+            }
             initShufflePool();
           }
-          if (shufflePool.length === 0) return (currentIndex + 1) % tracks.length;
+          if (shufflePool.length === 0) return -1;
           const nextIdx = shufflePool.shift();
           if (currentIndex !== -1) shuffleHistory.push(currentIndex);
           return nextIdx;
+        }
+
+        if (currentIndex === tracks.length - 1 && repeatMode === 'off') {
+          // Daftar berurutan selesai dan repeat mati
+          return -1;
         }
 
         return (currentIndex + 1) % tracks.length;
@@ -3061,7 +2770,7 @@
           navigator.mediaSession.metadata = new MediaMetadata({
             title: t.title || 'Lagu Lokal',
             artist: t.artist || 'Tidak diketahui',
-            album: 'wisnux song • Dynamic Island',
+            album: 'wisnux song',
             artwork: [
               { src: origin + '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
               { src: origin + '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -3135,9 +2844,6 @@
         audio.load();
         nowTitle.textContent = t.title;
         nowArtist.textContent = t.artist;
-        islandTitle.textContent = t.title;
-        expandedTitle.textContent = t.title;
-        expandedArtist.textContent = t.artist;
 
         updateMediaSessionMetadata(t);
         if (!document.hidden) renderTracklist();
@@ -3190,12 +2896,6 @@
           : '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
         playIcon.style.marginLeft = isPlaying ? '0' : '2px';
 
-        // Dynamic Island icons
-        islandMiniPlayIcon.innerHTML = isPlaying
-          ? '<rect x="5" y="4" width="4" height="16" rx="1"></rect><rect x="15" y="4" width="4" height="16" rx="1"></rect>'
-          : '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
-        islandPlayIcon.innerHTML = islandMiniPlayIcon.innerHTML;
-
         updateVu(isPlaying);
         if (!document.hidden) renderTracklist();
 
@@ -3216,22 +2916,21 @@
         playBtn.disabled = !has;
         prevBtn.disabled = !has;
         nextBtn.disabled = !has;
-        islandMiniPlay.disabled = !has;
-        islandPlayBtn.disabled = !has;
-        islandPrevBtn.disabled = !has;
-        islandNextBtn.disabled = !has;
       }
 
       function playNext() {
         if (tracks.length === 0) return;
-        const atEnd = !shuffle && currentIndex === tracks.length - 1;
-        if (atEnd && repeatMode === 'off') {
-          loadTrack(0);
+        const nextIdx = pickNextIndex();
+        if (nextIdx === -1) {
           pause();
+          if (tracks.length > 0) {
+            loadTrack(0);
+            audio.currentTime = 0;
+          }
+          showToast('Daftar putar selesai diputar');
           return;
         }
-        const idx = pickNextIndex();
-        loadTrack(idx);
+        loadTrack(nextIdx);
         play();
       }
 
@@ -3278,20 +2977,16 @@
 
       audio.addEventListener('timeupdate', () => {
         seekBar.value = audio.currentTime;
-        expandedSeekBar.value = audio.currentTime;
         const cur = fmtTime(audio.currentTime);
         curTimeEl.textContent = cur;
-        expandedCurTime.textContent = cur;
         updatePositionState();
       });
 
       audio.addEventListener('loadedmetadata', () => {
         const dur = audio.duration || 0;
         seekBar.max = dur;
-        expandedSeekBar.max = dur;
         const dStr = fmtTime(dur);
         durTimeEl.textContent = dStr;
-        expandedDurTime.textContent = dStr;
         updatePositionState();
       });
 
@@ -3312,11 +3007,11 @@
         if (shuffle) {
           initShufflePool();
           shuffleHistory = currentIndex !== -1 ? [currentIndex] : [];
-          showToast('🔀 Smart Shuffle aktif');
+          showToast('Putar Acak Aktif');
         } else {
           shufflePool = [];
           shuffleHistory = [];
-          showToast('Urutan normal');
+          showToast('Urutan Normal');
         }
       });
 
@@ -3331,7 +3026,7 @@
         repeatIcon.innerHTML = repeatIcons[repeatMode];
         repeatBtn.classList.toggle('active-c', repeatMode !== 'off');
         repeatBtn.classList.toggle('muted-c', repeatMode === 'off');
-        const msgs = { off: 'Ulangi: Mati', all: '🔁 Ulangi Semua Lagu', one: '🔂 Ulangi 1 Lagu Ini' };
+        const msgs = { off: 'Ulangi: Mati', all: 'Ulangi: Semua Lagu', one: 'Ulangi: 1 Lagu Ini' };
         showToast(msgs[repeatMode]);
       });
 
@@ -3434,25 +3129,42 @@
       updateOnlineStatus();
 
       // ---------- Install Prompt (PWA / APK) ----------
-      const installBtn = document.getElementById('installBtn');
       let deferredPrompt = null;
 
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        installBtn.style.display = 'flex';
+        settingsInstallBtn.classList.add('active');
       });
 
-      installBtn.addEventListener('click', async () => {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        await deferredPrompt.userChoice;
-        deferredPrompt = null;
-        installBtn.style.display = 'none';
+      settingsInstallBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const choice = await deferredPrompt.userChoice;
+          if (choice && choice.outcome === 'accepted') {
+            showToast('Aplikasi berhasil dipasang');
+            settingsInstallBtn.classList.remove('active');
+            settingsInstallBtn.classList.add('success');
+            const span = settingsInstallBtn.querySelector('span');
+            if (span) span.textContent = 'Terpasang';
+          }
+          deferredPrompt = null;
+        } else {
+          const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+          if (isStandalone) {
+            showToast('Aplikasi sudah terpasang di perangkat ini');
+          } else {
+            showToast('Gunakan menu browser (titik tiga) lalu pilih "Tambahkan ke Layar Utama"');
+          }
+        }
       });
 
       window.addEventListener('appinstalled', () => {
-        installBtn.style.display = 'none';
+        settingsInstallBtn.classList.remove('active');
+        settingsInstallBtn.classList.add('success');
+        const span = settingsInstallBtn.querySelector('span');
+        if (span) span.textContent = 'Terpasang';
+        deferredPrompt = null;
       });
     })();
   </script>

@@ -1,5 +1,3 @@
-import { ttdl, youtube, igdl, twitter, fbdown, spotify, soundcloud, aio } from 'btch-downloader';
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -17,7 +15,8 @@ export default async function handler(req, res) {
       'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
   };
 
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const cleanUrlString = (t) =>
+    t ? t.replace(/\\u002F/g, '/').replace(/\\/g, '').replace(/&amp;/g, '&') : null;
 
   // ──────────────────────────────────────────────────────────────────────────
   // ACTION: download (Proxy file media agar bebas CORS & bisa disimpan offline)
@@ -73,7 +72,51 @@ export default async function handler(req, res) {
     const makeProxyUrl = (target) =>
       `${protocol}://${host}/api/download?action=download&audioUrl=${encodeURIComponent(target)}`;
 
+    // Lazy load btch-downloader safely
+    let btch = null;
+    try {
+      btch = await import('btch-downloader');
+    } catch (err) {
+      console.warn('btch-downloader import notice:', err.message);
+    }
+
+    // Helper: Public multi-platform resolver (Cobalt API)
+    const fetchCobalt = async (targetUrl, audioOnly = true) => {
+      const endpoints = [
+        'https://api.cobalt.tools',
+        'https://cobalt-api.kwiatekm.tokyo',
+        'https://cobalt.api.scip.io',
+        'https://api.server.artemislena.eu'
+      ];
+      for (const ep of endpoints) {
+        try {
+          const cRes = await fetch(ep, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'User-Agent': BROWSER_HEADERS['User-Agent'],
+            },
+            body: JSON.stringify({
+              url: targetUrl,
+              downloadMode: audioOnly ? 'audio' : 'auto',
+              audioFormat: 'mp3',
+            }),
+            signal: AbortSignal.timeout(6000),
+          });
+          if (cRes.ok) {
+            const data = await cRes.json();
+            const mediaUrl = data.url || data.audio;
+            if (mediaUrl) return mediaUrl;
+          }
+        } catch (_) {}
+      }
+      return null;
+    };
+
+    // ────────────────────────────────────────────────────────────────────────
     // 1. YouTube
+    // ────────────────────────────────────────────────────────────────────────
     if (
       cleanUrl.includes('youtube.com') ||
       cleanUrl.includes('youtu.be')
@@ -82,7 +125,7 @@ export default async function handler(req, res) {
         let ytTitle = 'Lagu YouTube';
         let ytArtist = 'YouTube Creator';
 
-        // Coba oEmbed YouTube untuk judul & author akurat
+        // OEmbed YouTube
         try {
           const oembedRes = await fetch(
             `https://www.youtube.com/oembed?url=${encodeURIComponent(cleanUrl)}&format=json`
@@ -94,102 +137,89 @@ export default async function handler(req, res) {
           }
         } catch (_) {}
 
-        // Provider 1: btch-downloader youtube
+        // Provider 0: Cobalt API (Fast & High Quality Audio)
         try {
-          const ytData = await youtube(cleanUrl);
-          if (ytData && ytData.status !== false) {
-            const rawAudio = ytData.mp3 || ytData.mp4;
-            if (rawAudio) {
-              return res.status(200).json({
-                platform: 'youtube',
-                title: ytData.title || ytTitle,
-                artist: ytData.author || ytArtist,
-                thumbnail: ytData.thumbnail || '',
-                downloadUrl: makeProxyUrl(rawAudio),
-                rawAudioUrl: rawAudio,
-              });
-            }
-          }
-        } catch (ytErr) {
-          console.warn('btch youtube error:', ytErr.message);
-        }
-
-        // Provider 2: Cobalt public API fallback
-        try {
-          const cobaltRes = await fetch('https://api.cobalt.tools/', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Accept: 'application/json',
-            },
-            body: JSON.stringify({
-              url: cleanUrl,
-              downloadMode: 'audio',
-              audioFormat: 'mp3',
-            }),
-          });
-          if (cobaltRes.ok) {
-            const cobData = await cobaltRes.json();
-            const mediaUrl = cobData.url || cobData.audio;
-            if (mediaUrl) {
-              return res.status(200).json({
-                platform: 'youtube',
-                title: ytTitle,
-                artist: ytArtist,
-                downloadUrl: makeProxyUrl(mediaUrl),
-                rawAudioUrl: mediaUrl,
-              });
-            }
-          }
-        } catch (cobErr) {
-          console.warn('Cobalt API fallback error:', cobErr.message);
-        }
-
-        // Provider 3: Invidious public audio stream fallback
-        try {
-          let videoId = '';
-          const match1 = cleanUrl.match(/[?&]v=([^&#]+)/);
-          const match2 = cleanUrl.match(/youtu\.be\/([^?&#]+)/);
-          const match3 = cleanUrl.match(/shorts\/([^?&#]+)/);
-          if (match1) videoId = match1[1];
-          else if (match2) videoId = match2[1];
-          else if (match3) videoId = match3[1];
-
-          if (videoId) {
-            const invidiousInstances = [
-              'https://inv.tux.pizza',
-              'https://invidious.nerdvpn.de',
-              'https://vid.puffyan.us',
-            ];
-            for (const inst of invidiousInstances) {
-              try {
-                const invRes = await fetch(
-                  `${inst}/api/v1/videos/${videoId}?fields=title,author,formatStreams,adaptiveFormats`,
-                  { headers: BROWSER_HEADERS }
-                );
-                if (invRes.ok) {
-                  const data = await invRes.json();
-                  const audioFormat = data.adaptiveFormats?.find((f) =>
-                    f.type?.startsWith('audio/')
-                  );
-                  if (audioFormat && audioFormat.url) {
-                    return res.status(200).json({
-                      platform: 'youtube',
-                      title: data.title || ytTitle,
-                      artist: data.author || ytArtist,
-                      downloadUrl: makeProxyUrl(audioFormat.url),
-                      rawAudioUrl: audioFormat.url,
-                    });
-                  }
-                }
-              } catch (_) {}
-            }
+          const cobaltAudio = await fetchCobalt(cleanUrl, true);
+          if (cobaltAudio) {
+            return res.status(200).json({
+              platform: 'youtube',
+              title: ytTitle,
+              artist: ytArtist,
+              downloadUrl: makeProxyUrl(cobaltAudio),
+              rawAudioUrl: cobaltAudio,
+            });
           }
         } catch (_) {}
 
+        // Provider A: btch-downloader youtube
+        if (btch && btch.youtube) {
+          try {
+            const ytData = await btch.youtube(cleanUrl);
+            if (ytData && ytData.status !== false) {
+              const rawAudio = ytData.mp3 || ytData.mp4;
+              if (rawAudio) {
+                return res.status(200).json({
+                  platform: 'youtube',
+                  title: ytData.title || ytTitle,
+                  artist: ytData.author || ytArtist,
+                  thumbnail: ytData.thumbnail || '',
+                  downloadUrl: makeProxyUrl(rawAudio),
+                  rawAudioUrl: rawAudio,
+                });
+              }
+            }
+          } catch (e) {
+            console.warn('btch youtube error:', e.message);
+          }
+        }
+
+        // Provider B: Invidious Instances
+        let videoId = '';
+        const match1 = cleanUrl.match(/[?&]v=([^&#]+)/);
+        const match2 = cleanUrl.match(/youtu\.be\/([^?&#]+)/);
+        const match3 = cleanUrl.match(/shorts\/([^?&#]+)/);
+        const match4 = cleanUrl.match(/embed\/([^?&#]+)/);
+        if (match1) videoId = match1[1];
+        else if (match2) videoId = match2[1];
+        else if (match3) videoId = match3[1];
+        else if (match4) videoId = match4[1];
+
+        if (videoId) {
+          const invidiousInstances = [
+            'https://invidious.f5.si',
+            'https://invidious.tiekoetter.com',
+            'https://inv.nadeko.net',
+            'https://yt.chocolatemoo53.com',
+            'https://inv.tux.pizza',
+            'https://vid.puffyan.us'
+          ];
+          for (const inst of invidiousInstances) {
+            try {
+              const invRes = await fetch(
+                `${inst}/api/v1/videos/${videoId}?fields=title,author,formatStreams,adaptiveFormats`,
+                { headers: BROWSER_HEADERS }
+              );
+              if (invRes.ok) {
+                const data = await invRes.json();
+                const audioFormat = data.adaptiveFormats?.find((f) =>
+                  f.type?.startsWith('audio/')
+                ) || data.formatStreams?.slice(-1)[0];
+                if (audioFormat && audioFormat.url) {
+                  return res.status(200).json({
+                    platform: 'youtube',
+                    title: data.title || ytTitle,
+                    artist: data.author || ytArtist,
+                    downloadUrl: makeProxyUrl(audioFormat.url),
+                    rawAudioUrl: audioFormat.url,
+                  });
+                }
+              }
+            } catch (_) {}
+          }
+        }
+
         return res.status(500).json({
-          error:
-            'Gagal mengekstrak audio dari link YouTube ini. Pastikan video tidak diproteksi/private.',
+          error: 'Gagal mengekstrak audio YouTube. Pastikan link publik dan tidak dibatasi usia.',
         });
       } catch (err) {
         return res
@@ -198,7 +228,9 @@ export default async function handler(req, res) {
       }
     }
 
+    // ────────────────────────────────────────────────────────────────────────
     // 2. TikTok
+    // ────────────────────────────────────────────────────────────────────────
     if (
       cleanUrl.includes('tiktok.com') ||
       cleanUrl.includes('douyin.com')
@@ -217,7 +249,7 @@ export default async function handler(req, res) {
           } catch (_) {}
         }
 
-        // Coba TikWM API
+        // Provider A: TikWM API
         try {
           const tikwmRes = await fetch('https://www.tikwm.com/api/', {
             method: 'POST',
@@ -260,28 +292,29 @@ export default async function handler(req, res) {
           }
         } catch (_) {}
 
-        // Fallback btch ttdl
-        try {
-          const ttdlData = await ttdl(resolvedUrl);
-          if (ttdlData && ttdlData.status !== false) {
-            const rawAudio =
-              ttdlData.audio?.[0] || ttdlData.video?.[0];
-            if (rawAudio) {
-              return res.status(200).json({
-                platform: 'tiktok',
-                title: ttdlData.title || ttdlData.title_audio || 'Lagu TikTok',
-                artist: 'Kreator TikTok',
-                thumbnail: ttdlData.thumbnail || '',
-                downloadUrl: makeProxyUrl(rawAudio),
-                rawAudioUrl: rawAudio,
-              });
+        // Provider B: btch ttdl
+        if (btch && btch.ttdl) {
+          try {
+            const ttdlData = await btch.ttdl(resolvedUrl);
+            if (ttdlData && ttdlData.status !== false) {
+              const rawAudio =
+                ttdlData.audio?.[0] || ttdlData.video?.[0];
+              if (rawAudio) {
+                return res.status(200).json({
+                  platform: 'tiktok',
+                  title: ttdlData.title || ttdlData.title_audio || 'Lagu TikTok',
+                  artist: 'Kreator TikTok',
+                  thumbnail: ttdlData.thumbnail || '',
+                  downloadUrl: makeProxyUrl(rawAudio),
+                  rawAudioUrl: rawAudio,
+                });
+              }
             }
-          }
-        } catch (_) {}
+          } catch (_) {}
+        }
 
         return res.status(500).json({
-          error:
-            'Gagal mengunduh musik dari TikTok. Video mungkin privat atau tautan tidak valid.',
+          error: 'Gagal mengunduh musik dari TikTok. Video mungkin privat.',
         });
       } catch (err) {
         return res
@@ -290,7 +323,9 @@ export default async function handler(req, res) {
       }
     }
 
+    // ────────────────────────────────────────────────────────────────────────
     // 3. Instagram (Reel, Post, Story)
+    // ────────────────────────────────────────────────────────────────────────
     if (
       cleanUrl.includes('instagram.com') ||
       cleanUrl.includes('instagr.am')
@@ -299,6 +334,7 @@ export default async function handler(req, res) {
         let igTitle = 'Instagram Reel Audio';
         let igArtist = 'Instagram Creator';
 
+        // Coba oembed Instagram untuk nama/author
         try {
           const oembedRes = await fetch(
             `https://api.instagram.com/oembed/?url=${encodeURIComponent(cleanUrl)}`
@@ -310,32 +346,110 @@ export default async function handler(req, res) {
           }
         } catch (_) {}
 
-        const igData = await igdl(cleanUrl);
-        if (igData && igData.status !== false && igData.result?.length > 0) {
-          const firstMedia = igData.result[0];
-          const mediaUrl = firstMedia.url || firstMedia;
-          if (mediaUrl) {
+        // Provider 0: Cobalt API (Instagram audio/video stream)
+        try {
+          const cobaltMedia = await fetchCobalt(cleanUrl, true);
+          if (cobaltMedia) {
             return res.status(200).json({
               platform: 'instagram',
               title: igTitle,
               artist: igArtist,
-              thumbnail: firstMedia.thumbnail || '',
-              downloadUrl: makeProxyUrl(mediaUrl),
-              rawAudioUrl: mediaUrl,
+              downloadUrl: makeProxyUrl(cobaltMedia),
+              rawAudioUrl: cobaltMedia,
             });
           }
+        } catch (_) {}
+
+        // Provider A: snapinsta.lc API
+        try {
+          const snapRes = await fetch('https://snapinsta.lc/process', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              Origin: 'https://snapinsta.lc',
+              Referer: 'https://snapinsta.lc/',
+              'User-Agent': BROWSER_HEADERS['User-Agent'],
+            },
+            body: `q=${encodeURIComponent(cleanUrl)}&scope=home&lang=en`,
+          });
+          if (snapRes.ok) {
+            const snapHtml = await snapRes.text();
+            const mediaMatch = snapHtml.match(/data-media-src="([^"]+)"/i);
+            if (mediaMatch && mediaMatch[1]) {
+              const mediaUrl = cleanUrlString(mediaMatch[1]);
+              return res.status(200).json({
+                platform: 'instagram',
+                title: igTitle,
+                artist: igArtist,
+                downloadUrl: makeProxyUrl(mediaUrl),
+                rawAudioUrl: mediaUrl,
+              });
+            }
+          }
+        } catch (_) {}
+
+        // Provider B: Instagram Embed Page JSON parsing
+        const shortcodeMatch = cleanUrl.match(/\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
+        if (shortcodeMatch && shortcodeMatch[2]) {
+          const shortcode = shortcodeMatch[2];
+          try {
+            const embedRes = await fetch(
+              `https://www.instagram.com/p/${shortcode}/embed/captioned/`,
+              {
+                headers: BROWSER_HEADERS,
+              }
+            );
+            if (embedRes.ok) {
+              const html = await embedRes.text();
+              const vMatch = html.match(/"video_url"\s*:\s*"([^"]+)"/);
+              if (vMatch && vMatch[1]) {
+                const mediaUrl = cleanUrlString(vMatch[1]);
+                return res.status(200).json({
+                  platform: 'instagram',
+                  title: igTitle,
+                  artist: igArtist,
+                  downloadUrl: makeProxyUrl(mediaUrl),
+                  rawAudioUrl: mediaUrl,
+                });
+              }
+            }
+          } catch (_) {}
         }
 
-        // Fallback AIO
-        const aioData = await aio(cleanUrl);
-        if (aioData && aioData.status !== false && aioData.url) {
-          return res.status(200).json({
-            platform: 'instagram',
-            title: aioData.title || igTitle,
-            artist: igArtist,
-            downloadUrl: makeProxyUrl(aioData.url),
-            rawAudioUrl: aioData.url,
-          });
+        // Provider C: btch igdl
+        if (btch && btch.igdl) {
+          try {
+            const igData = await btch.igdl(cleanUrl);
+            if (igData && igData.status !== false && igData.result?.length > 0) {
+              const firstMedia = igData.result[0];
+              const mediaUrl = firstMedia.url || firstMedia;
+              if (mediaUrl) {
+                return res.status(200).json({
+                  platform: 'instagram',
+                  title: igTitle,
+                  artist: igArtist,
+                  downloadUrl: makeProxyUrl(mediaUrl),
+                  rawAudioUrl: mediaUrl,
+                });
+              }
+            }
+          } catch (_) {}
+        }
+
+        // Provider D: btch aio
+        if (btch && btch.aio) {
+          try {
+            const aioData = await btch.aio(cleanUrl);
+            if (aioData && aioData.status !== false && aioData.url) {
+              return res.status(200).json({
+                platform: 'instagram',
+                title: aioData.title || igTitle,
+                artist: igArtist,
+                downloadUrl: makeProxyUrl(aioData.url),
+                rawAudioUrl: aioData.url,
+              });
+            }
+          } catch (_) {}
         }
 
         return res.status(500).json({
@@ -349,38 +463,84 @@ export default async function handler(req, res) {
       }
     }
 
+    // ────────────────────────────────────────────────────────────────────────
     // 4. Twitter / X
+    // ────────────────────────────────────────────────────────────────────────
     if (
       cleanUrl.includes('twitter.com') ||
       cleanUrl.includes('x.com')
     ) {
       try {
-        const twData = await twitter(cleanUrl);
-        if (twData && twData.status !== false && twData.url) {
-          return res.status(200).json({
-            platform: 'twitter',
-            title: twData.title || 'Audio X / Twitter',
-            artist: 'X Creator',
-            downloadUrl: makeProxyUrl(twData.url),
-            rawAudioUrl: twData.url,
-          });
+        // Provider 0: Cobalt API
+        try {
+          const cobaltMedia = await fetchCobalt(cleanUrl, true);
+          if (cobaltMedia) {
+            return res.status(200).json({
+              platform: 'twitter',
+              title: 'Audio X / Twitter',
+              artist: 'X Creator',
+              downloadUrl: makeProxyUrl(cobaltMedia),
+              rawAudioUrl: cobaltMedia,
+            });
+          }
+        } catch (_) {}
+
+        const tweetMatch = cleanUrl.match(/(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/);
+        if (tweetMatch && tweetMatch[1]) {
+          const tweetId = tweetMatch[1];
+          // Provider A: vxtwitter API (Direct MP4 Stream)
+          try {
+            const vxRes = await fetch(`https://api.vxtwitter.com/i/status/${tweetId}`);
+            if (vxRes.ok) {
+              const vxData = await vxRes.json();
+              const video = vxData?.media_extended?.find((m) => m.type === 'video');
+              if (video && video.url) {
+                return res.status(200).json({
+                  platform: 'twitter',
+                  title: vxData.text ? vxData.text.slice(0, 50) : 'Audio X / Twitter',
+                  artist: vxData.user_name || 'X Creator',
+                  downloadUrl: makeProxyUrl(video.url),
+                  rawAudioUrl: video.url,
+                });
+              }
+            }
+          } catch (_) {}
         }
 
-        // Fallback AIO
-        const aioData = await aio(cleanUrl);
-        if (aioData && aioData.status !== false && aioData.url) {
-          return res.status(200).json({
-            platform: 'twitter',
-            title: aioData.title || 'Audio X / Twitter',
-            artist: 'X Creator',
-            downloadUrl: makeProxyUrl(aioData.url),
-            rawAudioUrl: aioData.url,
-          });
+        // Provider B: btch twitter
+        if (btch && btch.twitter) {
+          try {
+            const twData = await btch.twitter(cleanUrl);
+            if (twData && twData.status !== false && twData.url) {
+              return res.status(200).json({
+                platform: 'twitter',
+                title: twData.title || 'Audio X / Twitter',
+                artist: 'X Creator',
+                downloadUrl: makeProxyUrl(twData.url),
+                rawAudioUrl: twData.url,
+              });
+            }
+          } catch (_) {}
+        }
+
+        // Provider C: btch aio
+        if (btch && btch.aio) {
+          try {
+            const aioData = await btch.aio(cleanUrl);
+            if (aioData && aioData.status !== false && aioData.url) {
+              return res.status(200).json({
+                platform: 'twitter',
+                title: aioData.title || 'Audio X / Twitter',
+                artist: 'X Creator',
+                downloadUrl: makeProxyUrl(aioData.url),
+                rawAudioUrl: aioData.url,
+              });
+            }
+          } catch (_) {}
         }
 
         return res.status(500).json({
-          error:
-            'Gagal mengambil video/audio dari X/Twitter. Pastikan tweet berisi media publik.',
+          error: 'Gagal mengambil video/audio dari X/Twitter.',
         });
       } catch (err) {
         return res
@@ -389,18 +549,19 @@ export default async function handler(req, res) {
       }
     }
 
+    // ────────────────────────────────────────────────────────────────────────
     // 5. Spotify
-    if (cleanUrl.includes('spotify.com')) {
+    // ────────────────────────────────────────────────────────────────────────
+    if (cleanUrl.includes('spotify.com') && btch && btch.spotify) {
       try {
-        const spData = await spotify(cleanUrl);
+        const spData = await btch.spotify(cleanUrl);
         const actual = spData?.result || spData;
-        if (actual && actual.download || actual.audio) {
+        if (actual && (actual.download || actual.audio)) {
           const audioLink = actual.download || actual.audio;
           return res.status(200).json({
             platform: 'spotify',
             title: actual.title || 'Lagu Spotify',
             artist: actual.artist || actual.author || 'Spotify Artist',
-            thumbnail: actual.thumbnail || '',
             downloadUrl: makeProxyUrl(audioLink),
             rawAudioUrl: audioLink,
           });
@@ -410,10 +571,12 @@ export default async function handler(req, res) {
       }
     }
 
+    // ────────────────────────────────────────────────────────────────────────
     // 6. SoundCloud
-    if (cleanUrl.includes('soundcloud.com')) {
+    // ────────────────────────────────────────────────────────────────────────
+    if (cleanUrl.includes('soundcloud.com') && btch && btch.soundcloud) {
       try {
-        const scData = await soundcloud(cleanUrl);
+        const scData = await btch.soundcloud(cleanUrl);
         const actual = scData?.result || scData;
         if (actual && (actual.audio || actual.download || actual.url)) {
           const audioLink = actual.audio || actual.download || actual.url;
@@ -421,7 +584,6 @@ export default async function handler(req, res) {
             platform: 'soundcloud',
             title: actual.title || 'Lagu SoundCloud',
             artist: actual.author || 'SoundCloud Artist',
-            thumbnail: actual.thumbnail || '',
             downloadUrl: makeProxyUrl(audioLink),
             rawAudioUrl: audioLink,
           });
@@ -431,42 +593,78 @@ export default async function handler(req, res) {
       }
     }
 
+    // ────────────────────────────────────────────────────────────────────────
     // 7. Facebook
+    // ────────────────────────────────────────────────────────────────────────
     if (cleanUrl.includes('facebook.com') || cleanUrl.includes('fb.watch')) {
       try {
-        const fbData = await fbdown(cleanUrl);
-        if (fbData && fbData.status !== false) {
-          const mediaUrl = fbData.Normal_video || fbData.HD;
-          if (mediaUrl) {
-            return res.status(200).json({
-              platform: 'facebook',
-              title: 'Audio Facebook Video',
-              artist: 'Facebook Creator',
-              downloadUrl: makeProxyUrl(mediaUrl),
-              rawAudioUrl: mediaUrl,
-            });
+        // Provider A: fdown.co.in
+        try {
+          const fbRes = await fetch('https://fdown.co.in/ajax', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Origin: 'https://fdown.co.in',
+              Referer: 'https://fdown.co.in/',
+            },
+            body: JSON.stringify({ url: cleanUrl }),
+          });
+          if (fbRes.ok) {
+            const data = await fbRes.json();
+            const links = data.links || {};
+            const mediaUrl = links.hd || links.sd || Object.values(links)[0];
+            if (mediaUrl) {
+              return res.status(200).json({
+                platform: 'facebook',
+                title: data.title || 'Audio Facebook Video',
+                artist: 'Facebook Creator',
+                downloadUrl: makeProxyUrl(mediaUrl),
+                rawAudioUrl: mediaUrl,
+              });
+            }
+          }
+        } catch (_) {}
+
+        // Provider B: btch fbdown
+        if (btch && btch.fbdown) {
+          const fbData = await btch.fbdown(cleanUrl);
+          if (fbData && fbData.status !== false) {
+            const mediaUrl = fbData.Normal_video || fbData.HD;
+            if (mediaUrl) {
+              return res.status(200).json({
+                platform: 'facebook',
+                title: 'Audio Facebook Video',
+                artist: 'Facebook Creator',
+                downloadUrl: makeProxyUrl(mediaUrl),
+                rawAudioUrl: mediaUrl,
+              });
+            }
           }
         }
       } catch (_) {}
     }
 
-    // 8. General AIO fallback untuk platform lainnya
-    try {
-      const generalData = await aio(cleanUrl);
-      if (generalData && generalData.status !== false && generalData.url) {
-        return res.status(200).json({
-          platform: 'general',
-          title: generalData.title || 'Media Online',
-          artist: 'Web Creator',
-          downloadUrl: makeProxyUrl(generalData.url),
-          rawAudioUrl: generalData.url,
-        });
-      }
-    } catch (_) {}
+    // ────────────────────────────────────────────────────────────────────────
+    // 8. General AIO fallback
+    // ────────────────────────────────────────────────────────────────────────
+    if (btch && btch.aio) {
+      try {
+        const generalData = await btch.aio(cleanUrl);
+        if (generalData && generalData.status !== false && generalData.url) {
+          return res.status(200).json({
+            platform: 'general',
+            title: generalData.title || 'Media Online',
+            artist: 'Web Creator',
+            downloadUrl: makeProxyUrl(generalData.url),
+            rawAudioUrl: generalData.url,
+          });
+        }
+      } catch (_) {}
+    }
 
     return res.status(400).json({
       error:
-        'Platform tidak didukung atau tautan tidak dapat diproses. Coba tautan YouTube, TikTok, Instagram, X/Twitter, Facebook, atau Spotify.',
+        'Platform tidak didukung atau link gagal diproses. Pastikan tautan publik dari YouTube, TikTok, Instagram, X/Twitter, Spotify, atau Facebook.',
     });
   }
 
