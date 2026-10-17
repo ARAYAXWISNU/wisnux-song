@@ -6,3 +6,5 @@ tugas.txt
 push.bat
 progress.md
 fitur.txt
+__pycache__/
+*.pyc

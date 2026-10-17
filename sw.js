@@ -1,4 +1,4 @@
-const CACHE_NAME = "wisnux.song.lokal-v6";
+const CACHE_NAME = "wisnux.song.lokal-v7";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -56,7 +56,7 @@ self.addEventListener("activate", (event) => {
 // Fetch strategy:
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  if (request.method !== "GET") return;
+  if (request.method !== "GET" && request.method !== "HEAD") return;
 
   const url = new URL(request.url);
 
@@ -77,8 +77,22 @@ self.addEventListener("fetch", (event) => {
           const blob = song.file;
           const rangeHeader = request.headers.get("Range");
 
-          // Paksa MIME type selalu audio/mpeg murni (persis seperti lagu link TikTok) agar Android Chrome TIDAK menganggapnya video saat layar mati
-          const mimeType = "audio/mpeg";
+          // MIME type audio murni agar Android & iOS mengenali sebagai background audio stream
+          const mimeType = (blob.type && blob.type.startsWith("audio/")) ? blob.type : "audio/mpeg";
+
+          // Dukungan untuk preflight / probe HEAD request dari Safari & Android media engine
+          if (request.method === "HEAD") {
+            return new Response(null, {
+              status: 200,
+              headers: {
+                "Content-Type": mimeType,
+                "Content-Length": blob.size,
+                "Accept-Ranges": "bytes",
+                "Access-Control-Allow-Origin": "*",
+                "Cache-Control": "public, max-age=31536000"
+              }
+            });
+          }
 
           if (!rangeHeader) {
             return new Response(blob, {
@@ -87,6 +101,7 @@ self.addEventListener("fetch", (event) => {
                 "Content-Type": mimeType,
                 "Content-Length": blob.size,
                 "Accept-Ranges": "bytes",
+                "Access-Control-Allow-Origin": "*",
                 "Cache-Control": "public, max-age=31536000"
               }
             });
@@ -99,23 +114,39 @@ self.addEventListener("fetch", (event) => {
               headers: {
                 "Content-Type": mimeType,
                 "Content-Length": blob.size,
-                "Accept-Ranges": "bytes"
+                "Accept-Ranges": "bytes",
+                "Access-Control-Allow-Origin": "*"
               }
             });
           }
 
           const start = parseInt(match[1], 10);
+          if (start >= blob.size) {
+            return new Response(null, {
+              status: 416,
+              statusText: "Range Not Satisfiable",
+              headers: {
+                "Content-Range": `bytes */${blob.size}`,
+                "Accept-Ranges": "bytes",
+                "Access-Control-Allow-Origin": "*"
+              }
+            });
+          }
+
           const end = match[2] ? parseInt(match[2], 10) : blob.size - 1;
-          const chunk = blob.slice(start, end + 1);
+          const safeEnd = Math.min(isNaN(end) ? blob.size - 1 : end, blob.size - 1);
+          const chunk = blob.slice(start, safeEnd + 1);
 
           return new Response(chunk, {
             status: 206,
             statusText: "Partial Content",
             headers: {
               "Content-Type": mimeType,
-              "Content-Range": `bytes ${start}-${end}/${blob.size}`,
+              "Content-Range": `bytes ${start}-${safeEnd}/${blob.size}`,
               "Content-Length": chunk.size,
-              "Accept-Ranges": "bytes"
+              "Accept-Ranges": "bytes",
+              "Access-Control-Allow-Origin": "*",
+              "Cache-Control": "public, max-age=31536000"
             }
           });
         })

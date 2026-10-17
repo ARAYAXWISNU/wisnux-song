@@ -59,6 +59,134 @@ export default async function handler(req, res) {
   }
 
   // ──────────────────────────────────────────────────────────────────────────
+  // ACTION: search (Mencari lagu berdasarkan judul / artis)
+  // ──────────────────────────────────────────────────────────────────────────
+  if (action === 'search') {
+    const q = req.query.q || req.query.query || req.query.term || '';
+    if (!q || !q.trim()) {
+      return res.status(400).json({ error: 'Parameter pencarian (q) diperlukan.' });
+    }
+
+    try {
+      const cleanQ = q.trim();
+      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(cleanQ)}`;
+      const searchRes = await fetch(searchUrl, {
+        headers: {
+          'User-Agent': BROWSER_HEADERS['User-Agent'],
+          'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
+        },
+      });
+
+      if (!searchRes.ok) {
+        throw new Error(`YouTube search returned HTTP ${searchRes.status}`);
+      }
+
+      const html = await searchRes.text();
+      const results = [];
+      const match = html.match(/var ytInitialData = ({.*?});<\/script>/) || html.match(/ytInitialData = ({.*?});<\/script>/);
+
+      if (match) {
+        try {
+          const data = JSON.parse(match[1]);
+          const contents = data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents || [];
+          for (const section of contents) {
+            const items = section?.itemSectionRenderer?.contents || [];
+            for (const item of items) {
+              const v = item?.videoRenderer;
+              if (v && v.videoId) {
+                const title = v.title?.runs?.[0]?.text || 'Lagu';
+                const author = v.ownerText?.runs?.[0]?.text || 'Artis';
+                const dur = v.lengthText?.simpleText || '';
+                const thumb = v.thumbnail?.thumbnails?.slice(-1)?.[0]?.url || '';
+                results.push({
+                  id: v.videoId,
+                  title,
+                  artist: author,
+                  duration: dur,
+                  thumbnail: thumb,
+                  url: `https://www.youtube.com/watch?v=${v.videoId}`,
+                });
+                if (results.length >= 15) break;
+              }
+            }
+            if (results.length >= 15) break;
+          }
+        } catch (_) {}
+      }
+
+      return res.status(200).json({
+        query: cleanQ,
+        total: results.length,
+        results,
+      });
+    } catch (err) {
+      console.error('Search error:', err.message);
+      return res.status(500).json({ error: 'Gagal mencari lagu: ' + err.message });
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // ACTION: spotify_playlist (Ekstraksi seluruh lagu dalam playlist Spotify)
+  // ──────────────────────────────────────────────────────────────────────────
+  if (action === 'spotify_playlist') {
+    const targetUrl = req.query.url || req.query.playlistUrl;
+    if (!targetUrl) {
+      return res.status(400).json({ error: 'Parameter url playlist Spotify diperlukan.' });
+    }
+
+    try {
+      const plMatch = targetUrl.match(/playlist[\/:]([a-zA-Z0-9]+)/);
+      if (!plMatch) {
+        return res.status(400).json({ error: 'URL Playlist Spotify tidak valid. Format: https://open.spotify.com/playlist/ID' });
+      }
+
+      const playlistId = plMatch[1];
+      const embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}`;
+      const spRes = await fetch(embedUrl, {
+        headers: {
+          'User-Agent': BROWSER_HEADERS['User-Agent'],
+          'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
+        },
+      });
+
+      if (!spRes.ok) {
+        throw new Error(`Spotify embed HTTP ${spRes.status}`);
+      }
+
+      const spHtml = await spRes.text();
+      const dataMatch = spHtml.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/);
+
+      if (!dataMatch) {
+        throw new Error('Gagal mengekstrak data dari halaman Spotify. Pastikan link playlist bersifat publik.');
+      }
+
+      const nextData = JSON.parse(dataMatch[1]);
+      const entity = nextData?.props?.pageProps?.state?.data?.entity || {};
+      const plName = entity.name || entity.title || 'Playlist Spotify';
+      const trackList = entity.trackList || [];
+
+      const tracks = trackList.map((t, idx) => ({
+        index: idx + 1,
+        title: t.title || t.name || 'Lagu Spotify',
+        artist: t.subtitle || t.artists?.[0]?.name || 'Spotify Artist',
+        duration: t.duration || 0,
+        uri: t.uri || '',
+      }));
+
+      return res.status(200).json({
+        platform: 'spotify_playlist',
+        playlistId,
+        title: plName,
+        total: tracks.length,
+        tracks,
+      });
+    } catch (err) {
+      console.error('Spotify playlist error:', err.message);
+      return res.status(500).json({ error: 'Gagal memproses playlist Spotify: ' + err.message });
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
   // ACTION: info (Menganalisis link YouTube, TikTok, IG, X, Spotify, dll)
   // ──────────────────────────────────────────────────────────────────────────
   if (action === 'info') {
