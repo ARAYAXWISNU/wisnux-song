@@ -1,4 +1,4 @@
-const CACHE_NAME = "wisnux.song.lokal-v7";
+const CACHE_NAME = "wisnux.song.lokal-v8";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -60,7 +60,7 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
 
-  // Stream audio directly from IndexedDB via HTTP 206 Partial Content (Bypasses Android Chrome Blob URL & Video suspension on lockscreen)
+  // Stream audio directly from IndexedDB via HTTP 206 Partial Content
   if (url.origin === self.location.origin && url.pathname === "/media-stream") {
     const songId = url.searchParams.get("id");
     if (!songId) {
@@ -163,12 +163,28 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // JANGAN intercept audio streams (external stream seperti Apple Music, YouTube stream, Range requests)
+  // Membiarkan browser menangani streaming media native secara langsung mencegah Cache 206 error yang memutus lagu
+  if (
+    request.headers.has("range") ||
+    request.destination === "audio" ||
+    request.destination === "video" ||
+    url.hostname.includes("apple.com") ||
+    url.hostname.includes("googlevideo") ||
+    url.hostname.includes("ytimg") ||
+    url.pathname.endsWith(".mp3") ||
+    url.pathname.endsWith(".m4a")
+  ) {
+    return;
+  }
+
   if (url.origin === self.location.origin) {
+    // ignoreSearch: true memastikan PWA yang dibuka via /?source=pwa tetap dapat memuat cache offline
     event.respondWith(
-      caches.match(request).then((cached) => {
+      caches.match(request, { ignoreSearch: true }).then((cached) => {
         const network = fetch(request)
           .then((response) => {
-            if (response && response.status === 200) {
+            if (response && response.status === 200 && response.type === 'basic') {
               const clone = response.clone();
               caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
             }
@@ -182,8 +198,10 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
           return response;
         })
         .catch(() => caches.match(request))

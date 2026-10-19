@@ -1375,6 +1375,8 @@
 
     .btn.active-c {
       color: var(--accent);
+      background: var(--accent-subtle);
+      border-radius: var(--radius-sm);
     }
 
     .btn:disabled {
@@ -2851,22 +2853,10 @@
             audioNodesConnected = true;
           }
 
-          // Handle system level interruptions (phone calls, alarms) and background suspensions
+          // Handle system level suspensions safely without pausing audio element
           audioCtx.onstatechange = () => {
-            if (audioCtx.state === 'interrupted') {
-              if (isPlaying) {
-                audio.pause();
-                wasPlayingBeforeDisconnect = true;
-                showToast('Panggilan atau sistem menginterupsi audio, musik dijeda', 'earphone-pause');
-              }
-            } else if (audioCtx.state === 'suspended') {
-              if (isPlaying) {
-                audioCtx.resume().catch(() => { });
-              }
-            } else if (audioCtx.state === 'running' && wasPlayingBeforeDisconnect) {
-              audio.play().catch(() => { });
-              wasPlayingBeforeDisconnect = false;
-              showToast('Audio dilanjutkan kembali', 'earphone-play');
+            if (audioCtx.state === 'suspended' && isPlaying) {
+              audioCtx.resume().catch(() => { });
             }
           };
         } catch (e) {
@@ -2925,6 +2915,7 @@
           showToast('Mode Adaptif HP aktif. Volume lagu disesuaikan agar stabil.');
         }
         applyCompressorMode(volumeNormMode);
+        try { localStorage.setItem('wisnux_norm_mode', volumeNormMode); } catch (_) { }
       }
 
       playerNormBadge.addEventListener('click', cycleVolumeNormMode);
@@ -2944,6 +2935,13 @@
         try {
           const devices = await navigator.mediaDevices.enumerateDevices();
           const audioOutputs = devices.filter(d => d.kind === 'audiooutput');
+
+          // Validasi ketersediaan label: di latar belakang atau tanpa izin mikrofon, label kosong
+          const hasLabels = devices.some(d => (d.label || '').trim().length > 0);
+          if (!hasLabels) {
+            updateOutputUI(false, audioOutputs);
+            return;
+          }
 
           let hasEarphones = false;
           let bestLabel = 'Speaker Internal / HP';
@@ -4319,7 +4317,9 @@
             }
             initShufflePool();
           }
-          if (shufflePool.length === 0) return -1;
+          if (shufflePool.length === 0) {
+            return (repeatMode !== 'off') ? 0 : -1;
+          }
           const nextIdx = shufflePool.shift();
           if (currentIndex !== -1) shuffleHistory.push(currentIndex);
           return nextIdx;
@@ -4333,6 +4333,21 @@
         return (currentIndex + 1) % tracks.length;
       }
 
+      // Update UI dan konfigurasi looping native audio
+      function updateRepeatUI() {
+        if (!repeatIcon || !repeatBtn) return;
+        repeatIcon.innerHTML = repeatIcons[repeatMode] || repeatIcons.off;
+        repeatBtn.classList.toggle('active-c', repeatMode !== 'off');
+        repeatBtn.classList.toggle('muted-c', repeatMode === 'off');
+
+        // Looping native HTML5 audio di level decoder browser (aman dari suspensi background Android/iOS)
+        if (repeatMode === 'one' || (repeatMode === 'all' && tracks.length === 1)) {
+          audio.loop = true;
+        } else {
+          audio.loop = false;
+        }
+      }
+
       // ---------- MediaSession API: Lock Screen & Dynamic Controls ----------
       function updateMediaSessionMetadata(t) {
         if (!('mediaSession' in navigator)) return;
@@ -4343,15 +4358,21 @@
         }
         try {
           const origin = window.location.origin;
+          const artwork = [];
+          if (t.thumbnail) {
+            artwork.push({ src: t.thumbnail, sizes: '512x512', type: 'image/jpeg' });
+          }
+          artwork.push(
+            { src: origin + '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+            { src: origin + '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+            { src: origin + '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png' }
+          );
+
           navigator.mediaSession.metadata = new MediaMetadata({
             title: t.title || 'Lagu Lokal',
-            artist: t.artist || 'Tidak diketahui',
+            artist: t.artist || 'wisnux song',
             album: 'wisnux song',
-            artwork: [
-              { src: origin + '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-              { src: origin + '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-              { src: origin + '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png' }
-            ]
+            artwork: artwork
           });
         } catch (e) {
           console.warn("MediaSession warning:", e);
@@ -4409,9 +4430,12 @@
         currentIndex = idx;
         const t = tracks[idx];
 
-        // Service Worker HTTP 206 route HANYA untuk berkas lokal yang tersimpan di IndexedDB
+        // Simpan id track terakhir ke localStorage agar saat PWA dibuka kembali lagu tidak hilang
+        try { localStorage.setItem('wisnux_current_track_id', t.id); } catch (_) { }
+
+        // Service Worker HTTP 206 route untuk berkas lokal yang tersimpan di IndexedDB
         const isStoredInDB = t.id && !t.id.startsWith('preview-') && t.file;
-        const streamUrl = `/media-stream?id=${encodeURIComponent(t.id)}&t=${Date.now()}`;
+        const streamUrl = `/media-stream?id=${encodeURIComponent(t.id)}`;
 
         if (isStoredInDB && navigator.serviceWorker && navigator.serviceWorker.controller) {
           audio.src = streamUrl;
@@ -4419,6 +4443,7 @@
           audio.src = t.url || (t.file ? URL.createObjectURL(t.file) : '');
         }
 
+        updateRepeatUI();
         audio.load();
         nowTitle.textContent = t.title;
         nowArtist.textContent = t.artist;
@@ -4485,6 +4510,7 @@
         audio.pause();
         releaseWakeLock();
         isPlaying = false;
+        try { localStorage.setItem('wisnux_current_time', audio.currentTime.toFixed(1)); } catch (_) { }
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
         if (!document.hidden) updatePlayUI();
       }
@@ -4494,7 +4520,6 @@
       }
 
       function updatePlayUI() {
-        // Player bar icon
         playIcon.innerHTML = isPlaying
           ? '<rect x="5" y="4" width="4" height="16" rx="1"></rect><rect x="15" y="4" width="4" height="16" rx="1"></rect>'
           : '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
@@ -4517,7 +4542,7 @@
             if (audioCtx && audioCtx.state === 'suspended') {
               try { await audioCtx.resume(); } catch (_) { }
             }
-            if (audio.paused) {
+            if (audio.paused && isPlaying) {
               try { await audio.play(); } catch (_) { }
             }
           }
@@ -4525,7 +4550,10 @@
           renderTracklist();
           updatePlayUI();
         } else {
-          releaseWakeLock();
+          // Tetap pertahankan pemutaran musik di latar belakang HP tanpa mematikan paksa audio
+          if (!isPlaying) {
+            releaseWakeLock();
+          }
         }
       });
 
@@ -4572,19 +4600,27 @@
       }
 
       audio.addEventListener('ended', () => {
-        if (repeatMode === 'one') {
+        // Mode ulangi 1 lagu atau semua lagu (jika hanya 1 lagu)
+        if (repeatMode === 'one' || (repeatMode === 'all' && tracks.length === 1)) {
           audio.currentTime = 0;
-          audio.play();
+          const p = audio.play();
+          if (p !== undefined) p.catch(() => { });
           return;
         }
+        // Mode ulangi semua lagu atau urutan normal
         playNext();
       });
 
+      // Fallback otomatis jika stream Service Worker gagal di latar belakang
       audio.addEventListener('error', (e) => {
         console.error("Audio playback error:", e);
         if (tracks[currentIndex]) {
           const t = tracks[currentIndex];
-          if (!audio.src.includes('blob:') && t.url) {
+          if (t.file && !audio.src.startsWith('blob:')) {
+            audio.src = URL.createObjectURL(t.file);
+            if (isPlaying) audio.play().catch(() => playNext());
+            return;
+          } else if (t.url && audio.src !== t.url) {
             audio.src = t.url;
             if (isPlaying) audio.play().catch(() => playNext());
             return;
@@ -4593,11 +4629,18 @@
         if (isPlaying) playNext();
       });
 
+      let lastSaveSeekTime = 0;
       audio.addEventListener('timeupdate', () => {
         seekBar.value = audio.currentTime;
         const cur = fmtTime(audio.currentTime);
         curTimeEl.textContent = cur;
         updatePositionState();
+
+        const now = Date.now();
+        if (now - lastSaveSeekTime > 2000) {
+          lastSaveSeekTime = now;
+          try { localStorage.setItem('wisnux_current_time', audio.currentTime.toFixed(1)); } catch (_) { }
+        }
       });
 
       audio.addEventListener('loadedmetadata', () => {
@@ -4611,6 +4654,7 @@
       seekBar.addEventListener('input', () => {
         audio.currentTime = Number(seekBar.value);
         updatePositionState();
+        try { localStorage.setItem('wisnux_current_time', audio.currentTime.toFixed(1)); } catch (_) { }
       });
 
       // ---------- Buttons ----------
@@ -4622,6 +4666,7 @@
         shuffle = !shuffle;
         shuffleBtn.classList.toggle('active-c', shuffle);
         shuffleBtn.classList.toggle('muted-c', !shuffle);
+        try { localStorage.setItem('wisnux_shuffle', shuffle ? '1' : '0'); } catch (_) { }
         if (shuffle) {
           initShufflePool();
           shuffleHistory = currentIndex !== -1 ? [currentIndex] : [];
@@ -4639,12 +4684,16 @@
         one: '<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path><text x="12" y="16" font-size="8" fill="currentColor" stroke="none" text-anchor="middle">1</text>'
       };
 
+      // Fitur Ulangi: Mengulang terus tanpa henti sampai dimatikan
       repeatBtn.addEventListener('click', () => {
         repeatMode = repeatMode === 'off' ? 'all' : repeatMode === 'all' ? 'one' : 'off';
-        repeatIcon.innerHTML = repeatIcons[repeatMode];
-        repeatBtn.classList.toggle('active-c', repeatMode !== 'off');
-        repeatBtn.classList.toggle('muted-c', repeatMode === 'off');
-        const msgs = { off: 'Ulangi: Mati', all: 'Ulangi: Semua Lagu', one: 'Ulangi: 1 Lagu Ini' };
+        updateRepeatUI();
+        try { localStorage.setItem('wisnux_repeat', repeatMode); } catch (_) { }
+        const msgs = {
+          off: 'Ulangi: Mati',
+          all: 'Ulangi: Semua Lagu (Putar terus sampai dimatikan)',
+          one: 'Ulangi: 1 Lagu Ini (Mengulang terus sampai dimatikan)'
+        };
         showToast(msgs[repeatMode]);
       });
 
@@ -4653,6 +4702,10 @@
         audio.volume = Number(volumeBar.value);
         muted = audio.volume === 0;
         lastVolume = audio.volume || lastVolume;
+        try {
+          localStorage.setItem('wisnux_volume', audio.volume.toString());
+          localStorage.setItem('wisnux_muted', muted ? '1' : '0');
+        } catch (_) { }
         updateVolIcon();
       });
 
@@ -4660,6 +4713,10 @@
         muted = !muted;
         audio.volume = muted ? 0 : (lastVolume || 0.75);
         volumeBar.value = audio.volume;
+        try {
+          localStorage.setItem('wisnux_volume', audio.volume.toString());
+          localStorage.setItem('wisnux_muted', muted ? '1' : '0');
+        } catch (_) { }
         updateVolIcon();
       });
 
@@ -4668,8 +4725,6 @@
           ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>'
           : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>';
       }
-
-      audio.volume = 0.75;
 
       // Keyboard Shortcut: Space
       document.addEventListener('keydown', (e) => {
@@ -4684,9 +4739,73 @@
         tracks.forEach(t => URL.revokeObjectURL(t.url));
       });
 
+      // ---------- Pemulihan Pengaturan Pengguna (PWA Persistence) ----------
+      function restoreUserSettings() {
+        try {
+          // 1. Repeat mode
+          const savedRepeat = localStorage.getItem('wisnux_repeat');
+          if (savedRepeat && ['off', 'all', 'one'].includes(savedRepeat)) {
+            repeatMode = savedRepeat;
+          }
+          updateRepeatUI();
+
+          // 2. Shuffle mode
+          const savedShuffle = localStorage.getItem('wisnux_shuffle');
+          if (savedShuffle !== null) {
+            shuffle = savedShuffle === '1';
+            shuffleBtn.classList.toggle('active-c', shuffle);
+            shuffleBtn.classList.toggle('muted-c', !shuffle);
+            if (shuffle) initShufflePool();
+          }
+
+          // 3. Volume
+          const savedVol = localStorage.getItem('wisnux_volume');
+          if (savedVol !== null) {
+            const v = parseFloat(savedVol);
+            if (!isNaN(v) && v >= 0 && v <= 1) {
+              audio.volume = v;
+              volumeBar.value = v;
+              lastVolume = v > 0 ? v : 0.75;
+            }
+          }
+
+          // 4. Muted
+          const savedMuted = localStorage.getItem('wisnux_muted');
+          if (savedMuted !== null) {
+            muted = savedMuted === '1';
+            if (muted) audio.volume = 0;
+            updateVolIcon();
+          }
+
+          // 5. Volume Normalization Mode
+          const savedNorm = localStorage.getItem('wisnux_norm_mode');
+          if (savedNorm && ['adaptive', 'gentle', 'bypass'].includes(savedNorm)) {
+            volumeNormMode = savedNorm;
+            if (normLabel) {
+              if (volumeNormMode === 'adaptive') normLabel.textContent = "Volume HP: Adaptif";
+              else if (volumeNormMode === 'gentle') normLabel.textContent = "Volume HP: Lembut";
+              else normLabel.textContent = "Volume HP: Asli (Non-aktif)";
+            }
+            if (playerNormBadge) {
+              playerNormBadge.classList.toggle('active', volumeNormMode !== 'bypass');
+            }
+            if (settingsNormLabel) {
+              if (volumeNormMode === 'adaptive') settingsNormLabel.textContent = "Adaptif";
+              else if (volumeNormMode === 'gentle') settingsNormLabel.textContent = "Lembut";
+              else settingsNormLabel.textContent = "Non-aktif";
+            }
+          }
+        } catch (e) {
+          console.warn("Restore settings notice:", e);
+        }
+      }
+
       // ---------- Init Application ----------
       async function initApp() {
         try {
+          // Pulihkan seluruh preferensi pengguna sebelum memuat daftar putar
+          restoreUserSettings();
+
           const saved = await getAllSongs();
           if (saved && saved.length > 0) {
             saved.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -4696,11 +4815,29 @@
                 file: s.file,
                 url: URL.createObjectURL(s.file),
                 title: s.title,
-                artist: s.artist
+                artist: s.artist,
+                thumbnail: s.thumbnail || ''
               });
             });
             renderTracklist();
-            loadTrack(0);
+
+            // Pulihkan track lagu terakhir yang sedang diputar
+            let restoreIdx = 0;
+            const savedTrackId = localStorage.getItem('wisnux_current_track_id');
+            if (savedTrackId) {
+              const foundIdx = tracks.findIndex(t => t.id === savedTrackId);
+              if (foundIdx !== -1) restoreIdx = foundIdx;
+            }
+
+            loadTrack(restoreIdx);
+
+            // Pulihkan posisi menit/detik pemutaran terakhir
+            const savedTime = parseFloat(localStorage.getItem('wisnux_current_time') || '0');
+            if (savedTime > 0 && isFinite(savedTime)) {
+              audio.currentTime = savedTime;
+              seekBar.value = savedTime;
+              curTimeEl.textContent = fmtTime(savedTime);
+            }
           }
         } catch (err) {
           console.error("Gagal inisialisasi basis data:", err);
@@ -4716,25 +4853,18 @@
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js').then((reg) => {
             reg.update();
+            // Silent update worker tanpa merefresh paksa halaman saat pengguna sedang memutar musik
             reg.addEventListener('updatefound', () => {
               const newWorker = reg.installing;
               if (newWorker) {
                 newWorker.addEventListener('statechange', () => {
                   if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
-                    window.location.reload();
+                    console.log("Service Worker wisnux-song diperbarui.");
                   }
                 });
               }
             });
           }).catch(() => { });
-
-          let refreshing = false;
-          navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (!refreshing) {
-              refreshing = true;
-              window.location.reload();
-            }
-          });
         });
       }
 
